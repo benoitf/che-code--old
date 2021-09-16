@@ -20,7 +20,7 @@ import { INativeEnvironmentService } from 'vs/platform/environment/common/enviro
 import { IExtensionGalleryService, IExtensionManagementService } from 'vs/platform/extensionManagement/common/extensionManagement';
 import { ILocalizationsService } from 'vs/platform/localizations/common/localizations';
 import { LocalizationsService } from 'vs/platform/localizations/node/localizations';
-import { ExtensionGalleryServiceWithNoStorageService } from 'vs/platform/extensionManagement/common/extensionGalleryService';
+import { ExtensionGalleryService } from 'vs/platform/extensionManagement/common/extensionGalleryService';
 import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
 import { ExtensionManagementService } from 'vs/platform/extensionManagement/node/extensionManagementService';
 import { REMOTE_FILE_SYSTEM_CHANNEL_NAME } from 'vs/workbench/services/remote/common/remoteAgentFileSystemChannel';
@@ -106,7 +106,7 @@ export class CheApplication extends Disposable {
 		// Grab from cliProcessMain.js
 		// Extensions
 		services.set(IExtensionManagementService, new SyncDescriptor(ExtensionManagementService));
-		services.set(IExtensionGalleryService, new SyncDescriptor(ExtensionGalleryServiceWithNoStorageService));
+		services.set(IExtensionGalleryService, new SyncDescriptor(ExtensionGalleryService));
 
 		// Localizations
 		services.set(ILocalizationsService, new SyncDescriptor(LocalizationsService));

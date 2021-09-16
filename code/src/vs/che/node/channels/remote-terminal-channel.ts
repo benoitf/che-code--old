@@ -18,7 +18,7 @@ import { IProcessDataEvent, IShellLaunchConfigDto, ITerminalProfile } from 'vs/p
 import { ICreateTerminalProcessResult } from 'vs/workbench/contrib/terminal/common/remoteTerminalChannel';
 import * as WS from 'ws';
 import { URI } from 'vs/base/common/uri';
-import { DeferredPromise } from 'vs/base/common/async';
+import { DeferredPromise, timeout } from 'vs/base/common/async';
 
 
 /**
@@ -46,6 +46,12 @@ export class RemoteTerminalChannel implements IServerChannel<RemoteAgentConnecti
 	private deferredContainers = new DeferredPromise<string[]>();
 
 	constructor(private readonly logService: ILogService) {
+		this.init();
+	}
+
+	async init() {
+		// do not connect immediately
+		await timeout(2000);
 		this.machineExecWebSocket = new ReconnectingWebSocket('ws://localhost:3333/connect', this.terminals, this.terminalIds, this._onProcessData, this._onProcessReady, this._onProcessExit, this.deferredContainers);
 	}
 
@@ -157,7 +163,7 @@ export class RemoteTerminalChannel implements IServerChannel<RemoteAgentConnecti
 			return createProcessResult;
 		}
 
-		this.logService.error(`RemoteTerminalChannel: unsupported command/${command}`);
+		this.logService.trace(`RemoteTerminalChannel: unsupported command/${command}`);
 		return undefined;
 	}
 
