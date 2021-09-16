@@ -7,7 +7,6 @@ import { localize } from 'vs/nls';
 export interface ITOCEntry<T> {
 	id: string;
 	label: string;
-	order?: number;
 	children?: ITOCEntry<T>[];
 	settings?: Array<T>;
 }

@@ -39,8 +39,7 @@
           ".yml",
           ".eyaml",
           ".eyml",
-          ".yaml",
-          ".cff"
+          ".yaml"
         ],
         "firstLine": "^#cloud-config",
         "configuration": "./language-configuration.json"

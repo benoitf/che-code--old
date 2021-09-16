@@ -36,7 +36,7 @@ export class NotebookStatusBarController extends Disposable {
 	}
 
 	private _updateVisibleCells(e: ICellVisibilityChangeEvent): void {
-		const vm = this._notebookEditor._getViewModel();
+		const vm = this._notebookEditor.viewModel;
 		if (!vm) {
 			return;
 		}

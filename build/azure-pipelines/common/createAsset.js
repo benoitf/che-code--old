@@ -30,29 +30,20 @@ function getPlatform(product, os, arch, type) {
                         case 'user-setup':
                             return `${asset}-user`;
                         default:
-                            throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
+                            throw `Unrecognized: ${product} ${os} ${arch} ${type}`;
                     }
                 case 'server':
                     if (arch === 'arm64') {
-                        throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
+                        throw `Unrecognized: ${product} ${os} ${arch} ${type}`;
                     }
                     return arch === 'ia32' ? 'server-win32' : `server-win32-${arch}`;
                 case 'web':
                     if (arch === 'arm64') {
-                        throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
+                        throw `Unrecognized: ${product} ${os} ${arch} ${type}`;
                     }
                     return arch === 'ia32' ? 'server-win32-web' : `server-win32-${arch}-web`;
                 default:
-                    throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
-            }
-        case 'alpine':
-            switch (product) {
-                case 'server':
-                    return `server-alpine-${arch}`;
-                case 'web':
-                    return `server-alpine-${arch}-web`;
-                default:
-                    throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
+                    throw `Unrecognized: ${product} ${os} ${arch} ${type}`;
             }
         case 'linux':
             switch (type) {
@@ -67,14 +58,14 @@ function getPlatform(product, os, arch, type) {
                         case 'web':
                             return arch === 'standalone' ? 'web-standalone' : `server-linux-${arch}-web`;
                         default:
-                            throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
+                            throw `Unrecognized: ${product} ${os} ${arch} ${type}`;
                     }
                 case 'deb-package':
                     return `linux-deb-${arch}`;
                 case 'rpm-package':
                     return `linux-rpm-${arch}`;
                 default:
-                    throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
+                    throw `Unrecognized: ${product} ${os} ${arch} ${type}`;
             }
         case 'darwin':
             switch (product) {
@@ -87,14 +78,14 @@ function getPlatform(product, os, arch, type) {
                     return 'server-darwin';
                 case 'web':
                     if (arch !== 'x64') {
-                        throw new Error(`What should the platform be?: ${product} ${os} ${arch} ${type}`);
+                        throw `What should the platform be?: ${product} ${os} ${arch} ${type}`;
                     }
                     return 'server-darwin-web';
                 default:
-                    throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
+                    throw `Unrecognized: ${product} ${os} ${arch} ${type}`;
             }
         default:
-            throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
+            throw `Unrecognized: ${product} ${os} ${arch} ${type}`;
     }
 }
 // Contains all of the logic for mapping types to our actual types in CosmosDB

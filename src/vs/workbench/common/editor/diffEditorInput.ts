@@ -6,7 +6,7 @@
 import { AbstractSideBySideEditorInputSerializer, SideBySideEditorInput } from 'vs/workbench/common/editor/sideBySideEditorInput';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import { EditorModel } from 'vs/workbench/common/editor/editorModel';
-import { TEXT_DIFF_EDITOR_ID, BINARY_DIFF_EDITOR_ID, Verbosity, IEditorDescriptor, IEditorPane, GroupIdentifier, IResourceDiffEditorInput, IUntypedEditorInput, DEFAULT_EDITOR_ASSOCIATION, isResourceDiffEditorInput, IDiffEditorInput, IResourceSideBySideEditorInput } from 'vs/workbench/common/editor';
+import { TEXT_DIFF_EDITOR_ID, BINARY_DIFF_EDITOR_ID, Verbosity, IEditorDescriptor, IEditorPane, GroupIdentifier, IResourceDiffEditorInput, IEditorInput, IUntypedEditorInput, DEFAULT_EDITOR_ASSOCIATION, isResourceDiffEditorInput } from 'vs/workbench/common/editor';
 import { BaseTextEditorModel } from 'vs/workbench/common/editor/textEditorModel';
 import { DiffEditorModel } from 'vs/workbench/common/editor/diffEditorModel';
 import { TextDiffEditorModel } from 'vs/workbench/common/editor/textDiffEditorModel';
@@ -18,13 +18,12 @@ import { IFileService } from 'vs/platform/files/common/files';
 import { URI } from 'vs/base/common/uri';
 import { withNullAsUndefined } from 'vs/base/common/types';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 /**
  * The base editor input for the diff editor. It is made up of two editor inputs, the original version
  * and the modified version.
  */
-export class DiffEditorInput extends SideBySideEditorInput implements IDiffEditorInput {
+export class DiffEditorInput extends SideBySideEditorInput {
 
 	static override readonly ID: string = 'workbench.editors.diffEditorInput';
 
@@ -45,10 +44,9 @@ export class DiffEditorInput extends SideBySideEditorInput implements IDiffEdito
 		readonly modified: EditorInput,
 		private readonly forceOpenAsBinary: boolean | undefined,
 		@ILabelService private readonly labelService: ILabelService,
-		@IFileService private readonly fileService: IFileService,
-		@IEditorService editorService: IEditorService
+		@IFileService private readonly fileService: IFileService
 	) {
-		super(name, description, original, modified, editorService);
+		super(name, description, original, modified);
 	}
 
 	override getName(): string {
@@ -139,20 +137,23 @@ export class DiffEditorInput extends SideBySideEditorInput implements IDiffEdito
 		return new DiffEditorModel(withNullAsUndefined(originalEditorModel), withNullAsUndefined(modifiedEditorModel));
 	}
 
-	override toUntyped(options?: { preserveViewState: GroupIdentifier }): (IResourceDiffEditorInput & IResourceSideBySideEditorInput) | undefined {
-		const untyped = super.toUntyped(options);
-		if (untyped) {
+	override toUntyped(options?: { preserveViewState: GroupIdentifier }): IResourceDiffEditorInput | undefined {
+		const originalResourceEditorInput = this.secondary.toUntyped(options);
+		const modifiedResourceEditorInput = this.primary.toUntyped(options);
+
+		if (originalResourceEditorInput && modifiedResourceEditorInput && !isResourceDiffEditorInput(originalResourceEditorInput) && !isResourceDiffEditorInput(modifiedResourceEditorInput)) {
 			return {
-				...untyped,
-				modified: untyped.primary,
-				original: untyped.secondary
+				label: this.name,
+				description: this.description,
+				original: originalResourceEditorInput,
+				modified: modifiedResourceEditorInput
 			};
 		}
 
 		return undefined;
 	}
 
-	override matches(otherInput: EditorInput | IUntypedEditorInput): boolean {
+	override matches(otherInput: IEditorInput | IUntypedEditorInput): boolean {
 		if (this === otherInput) {
 			return true;
 		}

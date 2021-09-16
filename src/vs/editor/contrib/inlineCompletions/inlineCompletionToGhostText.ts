@@ -3,32 +3,19 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IDiffChange, LcsDiff } from 'vs/base/common/diff/diff';
 import * as strings from 'vs/base/common/strings';
 import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { ITextModel } from 'vs/editor/common/model';
 import { InlineCompletion } from 'vs/editor/common/modes';
+import { IDiffChange, LcsDiff } from 'vs/base/common/diff/diff';
 import { GhostText, GhostTextPart } from 'vs/editor/contrib/inlineCompletions/ghostText';
+
 
 export interface NormalizedInlineCompletion extends InlineCompletion {
 	range: Range;
 }
 
-export function normalizedInlineCompletionsEquals(a: NormalizedInlineCompletion | undefined, b: NormalizedInlineCompletion | undefined): boolean {
-	if (a === b) {
-		return true;
-	}
-	if (!a || !b) {
-		return false;
-	}
-	return a.range.equalsRange(b.range) && a.text === b.text && a.command === b.command;
-}
-
-/**
- * @param previewSuffixLength Sets where to split `inlineCompletion.text`.
- * 	If the text is `hello` and the suffix length is 2, the non-preview part is `hel` and the preview-part is `lo`.
-*/
 export function inlineCompletionToGhostText(
 	inlineCompletion: NormalizedInlineCompletion,
 	textModel: ITextModel,
@@ -41,41 +28,8 @@ export function inlineCompletionToGhostText(
 		return undefined;
 	}
 
-	const sourceLine = textModel.getLineContent(inlineCompletion.range.startLineNumber);
-	const sourceIndentationLength = strings.getLeadingWhitespace(sourceLine).length;
-
-	const suggestionTouchesIndentation = inlineCompletion.range.startColumn - 1 <= sourceIndentationLength;
-	if (suggestionTouchesIndentation) {
-		// source:      ··········[······abc]
-		//                         ^^^^^^^^^ inlineCompletion.range
-		//              ^^^^^^^^^^ ^^^^^^ sourceIndentationLength
-		//                         ^^^^^^ replacedIndentation.length
-		//                               ^^^ rangeThatDoesNotReplaceIndentation
-
-		// inlineCompletion.text: '··foo'
-		//                         ^^ suggestionAddedIndentationLength
-
-		const suggestionAddedIndentationLength = strings.getLeadingWhitespace(inlineCompletion.text).length;
-
-		const replacedIndentation = sourceLine.substring(inlineCompletion.range.startColumn - 1, sourceIndentationLength);
-		const rangeThatDoesNotReplaceIndentation = Range.fromPositions(
-			inlineCompletion.range.getStartPosition().delta(0, replacedIndentation.length),
-			inlineCompletion.range.getEndPosition()
-		);
-
-		const suggestionWithoutIndentationChange =
-			inlineCompletion.text.startsWith(replacedIndentation)
-				// Adds more indentation without changing existing indentation: We can add ghost text for this
-				? inlineCompletion.text.substring(replacedIndentation.length)
-				// Changes or removes existing indentation. Only add ghost text for the non-indentation part.
-				: inlineCompletion.text.substring(suggestionAddedIndentationLength);
-
-		inlineCompletion = {
-			range: rangeThatDoesNotReplaceIndentation,
-			text: suggestionWithoutIndentationChange,
-			command: inlineCompletion.command
-		};
-	}
+	const modifiedLength = inlineCompletion.text.length;
+	const previewStartInModified = modifiedLength - previewSuffixLength;
 
 	// This is a single line string
 	const valueToBeReplaced = textModel.getValueInRange(inlineCompletion.range);
@@ -94,8 +48,6 @@ export function inlineCompletionToGhostText(
 		}
 	}
 
-	const previewStartInCompletionText = inlineCompletion.text.length - previewSuffixLength;
-
 	for (const c of changes) {
 		const insertColumn = inlineCompletion.range.startColumn + c.originalStart + c.originalLength;
 
@@ -105,7 +57,11 @@ export function inlineCompletionToGhostText(
 		}
 
 		if (c.originalLength > 0) {
-			return undefined;
+			const originalText = valueToBeReplaced.substr(c.originalStart, c.originalLength);
+			const firstNonWsCol = textModel.getLineFirstNonWhitespaceColumn(lineNumber);
+			if (!(/^(\t| )*$/.test(originalText) && (firstNonWsCol === 0 || insertColumn <= firstNonWsCol))) {
+				return undefined;
+			}
 		}
 
 		if (c.modifiedLength === 0) {
@@ -113,7 +69,7 @@ export function inlineCompletionToGhostText(
 		}
 
 		const modifiedEnd = c.modifiedStart + c.modifiedLength;
-		const nonPreviewTextEnd = Math.max(c.modifiedStart, Math.min(modifiedEnd, previewStartInCompletionText));
+		const nonPreviewTextEnd = Math.max(c.modifiedStart, Math.min(modifiedEnd, previewStartInModified));
 		const nonPreviewText = inlineCompletion.text.substring(c.modifiedStart, nonPreviewTextEnd);
 		const italicText = inlineCompletion.text.substring(nonPreviewTextEnd, Math.max(c.modifiedStart, modifiedEnd));
 

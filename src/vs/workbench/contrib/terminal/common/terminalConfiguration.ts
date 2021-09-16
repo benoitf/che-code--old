@@ -10,23 +10,6 @@ import { TerminalLocationString, TerminalSettingId } from 'vs/platform/terminal/
 import { isMacintosh, isWindows } from 'vs/base/common/platform';
 import { Registry } from 'vs/platform/registry/common/platform';
 
-const terminalDescriptors = '\n- ' + [
-	localize('cwd', "`\${cwd}`: the terminal's current working directory"),
-	localize('cwdFolder', "`\${cwdFolder}`:  the terminal's current working directory, displayed for multi-root workspaces or in a single root workspace when the value differs from the initial working directory. This will not be displayed for Windows."),
-	localize('workspaceFolder', "`\${workspaceFolder}`:  the workpsace in which the terminal was launched"),
-	localize('local', "`\${local}`: indicates a local terminal in a remote workspace"),
-	localize('process', "`\${process}`: the name of the terminal process"),
-	localize('separator', "`\${separator}`: a conditional separator (\" - \") that only shows when surrounded by variables with values or static text."),
-	localize('sequence', "`\${sequence}`: the name provided to xterm.js by the process"),
-	localize('task', "`\${task}`: indicates this terminal is associated with a task"),
-].join('\n- '); // intentionally concatenated to not produce a string that is too long for translations
-
-let terminalTitleDescription = localize('terminalTitle', "Controls the terminal title. Variables are substituted based on the context:");
-terminalTitleDescription += terminalDescriptors;
-
-let terminalDescriptionDescription = localize('terminalDescription', "Controls the terminal description, which appears to the right of the title. Variables are substituted based on the context:");
-terminalDescriptionDescription += terminalDescriptors;
-
 const terminalConfiguration: IConfigurationNode = {
 	id: 'terminal',
 	order: 100,
@@ -263,21 +246,6 @@ const terminalConfiguration: IConfigurationNode = {
 			],
 			default: 'auto',
 			description: localize('terminal.integrated.gpuAcceleration', "Controls whether the terminal will leverage the GPU to do its rendering.")
-		},
-		[TerminalSettingId.TerminalTitleSeparator]: {
-			'type': 'string',
-			'default': ' - ',
-			'markdownDescription': localize("terminal.integrated.tabs.separator", "Separator used by `terminal.integrated.title` and `terminal.integrated.description`.")
-		},
-		[TerminalSettingId.TerminalTitle]: {
-			'type': 'string',
-			'default': '${process}',
-			'markdownDescription': terminalTitleDescription
-		},
-		[TerminalSettingId.TerminalDescription]: {
-			'type': 'string',
-			'default': '${task}${separator}${local}${separator}${cwdFolder}',
-			'markdownDescription': terminalDescriptionDescription
 		},
 		[TerminalSettingId.RightClickBehavior]: {
 			type: 'string',

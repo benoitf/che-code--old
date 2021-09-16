@@ -27,7 +27,7 @@ import { clamp } from 'vs/base/common/numbers';
 import { count } from 'vs/base/common/strings';
 import { URI } from 'vs/base/common/uri';
 import { MarkdownRenderer } from 'vs/editor/browser/core/markdownRenderer';
-import { ICodeEditor, IDiffEditorConstructionOptions, isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorAction2 } from 'vs/editor/browser/editorExtensions';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { EmbeddedCodeEditorWidget, EmbeddedDiffEditorWidget } from 'vs/editor/browser/widget/embeddedCodeEditorWidget';
@@ -57,17 +57,17 @@ import { EditorModel } from 'vs/workbench/common/editor/editorModel';
 import { flatTestItemDelimiter } from 'vs/workbench/contrib/testing/browser/explorerProjections/display';
 import { getTestItemContextOverlay } from 'vs/workbench/contrib/testing/browser/explorerProjections/testItemContextOverlay';
 import * as icons from 'vs/workbench/contrib/testing/browser/icons';
+import { ITestExplorerFilterState } from 'vs/workbench/contrib/testing/browser/testingExplorerFilter';
 import { ITestingOutputTerminalService } from 'vs/workbench/contrib/testing/browser/testingOutputTerminalService';
 import { testingPeekBorder, testingPeekHeaderBackground } from 'vs/workbench/contrib/testing/browser/theme';
 import { AutoOpenPeekViewWhen, getTestingConfiguration, TestingConfigKeys } from 'vs/workbench/contrib/testing/common/configuration';
 import { Testing } from 'vs/workbench/contrib/testing/common/constants';
 import { IRichLocation, ITestErrorMessage, ITestItem, ITestMessage, ITestRunTask, ITestTaskState, TestMessageType, TestResultItem, TestResultState, TestRunProfileBitset } from 'vs/workbench/contrib/testing/common/testCollection';
-import { ITestExplorerFilterState } from 'vs/workbench/contrib/testing/common/testExplorerFilterState';
+import { ITestProfileService } from 'vs/workbench/contrib/testing/common/testProfileService';
 import { TestingContextKeys } from 'vs/workbench/contrib/testing/common/testingContextKeys';
 import { ITestingPeekOpener } from 'vs/workbench/contrib/testing/common/testingPeekOpener';
 import { isFailedState } from 'vs/workbench/contrib/testing/common/testingStates';
 import { buildTestUri, ParsedTestUri, parseTestUri, TestUriType } from 'vs/workbench/contrib/testing/common/testingUri';
-import { ITestProfileService } from 'vs/workbench/contrib/testing/common/testProfileService';
 import { ITestResult, maxCountPriority, resultItemParents, TestResultItemChange, TestResultItemChangeReason } from 'vs/workbench/contrib/testing/common/testResult';
 import { ITestResultService, ResultChangeEvent } from 'vs/workbench/contrib/testing/common/testResultService';
 import { ITestService } from 'vs/workbench/contrib/testing/common/testService';
@@ -756,7 +756,7 @@ const commonEditorOptions: IEditorOptions = {
 	},
 };
 
-const diffEditorOptions: IDiffEditorConstructionOptions = {
+const diffEditorOptions: IDiffEditorOptions = {
 	...commonEditorOptions,
 	enableSplitViewResizing: true,
 	isInEmbeddedEditor: true,
@@ -1461,7 +1461,7 @@ class TreeActionsProvider {
 					localize('testing.revealInExplorer', "Reveal in Test Explorer"),
 					Codicon.listTree.classNames,
 					undefined,
-					() => this.commandService.executeCommand('_revealTestInExplorer', extId),
+					() => this.commandService.executeCommand('vscode.revealTestInExplorer', extId),
 				));
 
 				if (capabilities & TestRunProfileBitset.Run) {

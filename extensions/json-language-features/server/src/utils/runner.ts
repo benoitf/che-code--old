@@ -23,7 +23,6 @@ export function runSafeAsync<T>(runtime: RuntimeEnvironment, func: () => Thenabl
 		runtime.timer.setImmediate(() => {
 			if (token.isCancellationRequested) {
 				resolve(cancelValue());
-				return;
 			}
 			return func().then(result => {
 				if (token.isCancellationRequested) {

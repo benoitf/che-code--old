@@ -18,11 +18,10 @@ import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
-import { EditorInputCapabilities, IEditorMemento, IEditorOpenContext } from 'vs/workbench/common/editor';
-import { EditorInput } from 'vs/workbench/common/editor/editorInput';
+import { EditorInputCapabilities, IEditorInput, IEditorMemento, IEditorOpenContext } from 'vs/workbench/common/editor';
 import { NotebookEditorInput } from 'vs/workbench/contrib/notebook/common/notebookEditorInput';
 import { NotebookEditorWidget } from 'vs/workbench/contrib/notebook/browser/notebookEditorWidget';
-import { INotebookEditorViewState } from 'vs/workbench/contrib/notebook/browser/viewModel/notebookViewModel';
+import { INotebookEditorViewState, NotebookViewModel } from 'vs/workbench/contrib/notebook/browser/viewModel/notebookViewModel';
 import { IEditorDropService } from 'vs/workbench/services/editor/browser/editorDropService';
 import { IEditorGroup, IEditorGroupsService, GroupsOrder } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -32,10 +31,9 @@ import { clearMarks, getAndClearMarks, mark } from 'vs/workbench/contrib/noteboo
 import { IFileService } from 'vs/platform/files/common/files';
 import { IActionViewItem } from 'vs/base/browser/ui/actionbar/actionbar';
 import { IAction } from 'vs/base/common/actions';
-import { SELECT_KERNEL_ID } from 'vs/workbench/contrib/notebook/browser/controller/coreActions';
+import { SELECT_KERNEL_ID } from 'vs/workbench/contrib/notebook/browser/contrib/coreActions';
 import { NotebooKernelActionViewItem } from 'vs/workbench/contrib/notebook/browser/notebookKernelActionViewItem';
 import { ITextResourceConfigurationService } from 'vs/editor/common/services/textResourceConfigurationService';
-import { NotebookTextModel } from 'vs/workbench/contrib/notebook/common/model/notebookTextModel';
 
 const NOTEBOOK_EDITOR_VIEW_STATE_PREFERENCE_KEY = 'NotebookEditorViewState';
 
@@ -99,8 +97,8 @@ export class NotebookEditor extends EditorPane {
 		}
 	}
 
-	get textModel(): NotebookTextModel | undefined {
-		return this._widget.value?.textModel;
+	get viewModel(): NotebookViewModel | undefined {
+		return this._widget.value?.viewModel;
 	}
 
 	override get minimumWidth(): number { return 375; }
@@ -214,7 +212,7 @@ export class NotebookEditor extends EditorPane {
 				[{
 					label: localize('fail.reOpen', "Reopen file with VS Code standard text editor"),
 					run: async () => {
-						await this._editorService.openEditor({ resource: input.resource, options: { ...options, override: EditorResolution.DISABLED } });
+						await this._editorService.openEditor({ resource: input.resource, forceFile: true, options: { ...options, override: EditorResolution.DISABLED } });
 					}
 				}]
 			);
@@ -312,7 +310,7 @@ export class NotebookEditor extends EditorPane {
 		super.saveState();
 	}
 
-	private _saveEditorViewState(input: EditorInput | undefined): void {
+	private _saveEditorViewState(input: IEditorInput | undefined): void {
 		if (this.group && this._widget.value && input instanceof NotebookEditorInput) {
 			if (this._widget.value.isDisposed) {
 				return;
@@ -350,7 +348,7 @@ export class NotebookEditor extends EditorPane {
 			return;
 		}
 
-		if (this._input.resource.toString() !== this._widget.value.textModel?.uri.toString() && this._widget.value?.hasModel()) {
+		if (this._input.resource.toString() !== this._widget.value.viewModel?.uri.toString() && this._widget.value?.viewModel) {
 			// input and widget mismatch
 			// this happens when
 			// 1. open document A, pin the document

@@ -59,7 +59,7 @@ export function getStringIdentifierForProxy(nid: number): string {
 }
 
 /**
- * Marks the object as containing buffers that should be serialized more efficiently.
+ * Marks the object as containing buffers that should be serialized more efficently.
  */
 export class SerializableObjectWithBuffers<T> {
 	constructor(

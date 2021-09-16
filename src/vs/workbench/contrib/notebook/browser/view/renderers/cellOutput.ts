@@ -22,8 +22,8 @@ import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { IQuickInputService, IQuickPickItem } from 'vs/platform/quickinput/common/quickInput';
 import { ThemeIcon } from 'vs/platform/theme/common/themeService';
 import { IExtensionsViewPaneContainer, VIEWLET_ID as EXTENSION_VIEWLET_ID } from 'vs/workbench/contrib/extensions/common/extensions';
-import { INotebookCellActionContext } from 'vs/workbench/contrib/notebook/browser/controller/coreActions';
-import { CodeCellRenderTemplate, ICellOutputViewModel, ICellViewModel, IInsetRenderOutput, INotebookEditorDelegate, IRenderOutput, JUPYTER_EXTENSION_ID, RenderOutputType } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
+import { INotebookCellActionContext } from 'vs/workbench/contrib/notebook/browser/contrib/coreActions';
+import { CodeCellRenderTemplate, ICellOutputViewModel, ICellViewModel, IInsetRenderOutput, INotebookEditor, IRenderOutput, JUPYTER_EXTENSION_ID, RenderOutputType } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
 import { mimetypeIcon } from 'vs/workbench/contrib/notebook/browser/notebookIcons';
 import { getResizesObserver } from 'vs/workbench/contrib/notebook/browser/view/renderers/cellWidgets';
 import { CodeCellViewModel } from 'vs/workbench/contrib/notebook/browser/viewModel/codeCellViewModel';
@@ -78,7 +78,7 @@ export class CellOutputElement extends Disposable {
 	private readonly contextKeyService: IContextKeyService;
 
 	constructor(
-		private notebookEditor: INotebookEditorDelegate,
+		private notebookEditor: INotebookEditor,
 		private viewCell: CodeCellViewModel,
 		private outputContainer: HTMLElement,
 		readonly output: ICellOutputViewModel,
@@ -211,7 +211,7 @@ export class CellOutputElement extends Disposable {
 			return undefined;
 		}
 
-		const notebookTextModel = this.notebookEditor.textModel;
+		const notebookTextModel = this.notebookEditor.viewModel.notebookDocument;
 
 		const [mimeTypes, pick] = this.output.resolveMimeTypes(notebookTextModel, this.notebookEditor.activeKernel?.preloadProvides);
 
@@ -332,7 +332,7 @@ export class CellOutputElement extends Disposable {
 
 		const toolbar = this._renderDisposableStore.add(new ToolBar(mimeTypePicker, this.contextMenuService, {
 			getKeyBinding: action => this.keybindingService.lookupKeybinding(action.id),
-			renderDropdownAsChildElement: false
+			renderDropdownAsChildElement: true
 		}));
 		toolbar.context = <INotebookCellActionContext>{
 			ui: true,
@@ -512,7 +512,7 @@ export class CellOutputContainer extends Disposable {
 	}
 
 	constructor(
-		private notebookEditor: INotebookEditorDelegate,
+		private notebookEditor: INotebookEditor,
 		private viewCell: CodeCellViewModel,
 		private readonly templateData: CodeCellRenderTemplate,
 		private options: { limit: number; },
@@ -796,11 +796,11 @@ export class CellOutputContainer extends Disposable {
 			supportThemeIcons: true
 		};
 
-		const rendered = renderMarkdown(md, {
+		const element = renderMarkdown(md, {
 			actionHandler: {
 				callback: (content) => {
 					if (content === 'command:workbench.action.openLargeOutput') {
-						this.openerService.open(CellUri.generateCellUri(this.notebookEditor.textModel!.uri, this.viewCell.handle, Schemas.vscodeNotebookCellOutput));
+						this.openerService.open(CellUri.generateCellUri(this.notebookEditor.viewModel!.uri, this.viewCell.handle, Schemas.vscodeNotebookCellOutput));
 					}
 
 					return;
@@ -808,10 +808,9 @@ export class CellOutputContainer extends Disposable {
 				disposables
 			}
 		});
-		disposables.add(rendered);
 
-		rendered.element.classList.add('output-show-more');
-		return rendered.element;
+		element.classList.add('output-show-more');
+		return element;
 	}
 
 	private _relayoutCell() {

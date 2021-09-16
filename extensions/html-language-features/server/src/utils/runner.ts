@@ -23,7 +23,6 @@ export function runSafe<T>(runtime: RuntimeEnvironment, func: () => Thenable<T>,
 		runtime.timer.setImmediate(() => {
 			if (token.isCancellationRequested) {
 				resolve(cancelValue());
-				return;
 			}
 			return func().then(result => {
 				if (token.isCancellationRequested) {

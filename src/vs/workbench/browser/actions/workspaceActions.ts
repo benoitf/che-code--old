@@ -60,16 +60,10 @@ export class OpenFolderAction extends Action2 {
 			title: { value: localize('openFolder', "Open Folder..."), original: 'Open Folder...' },
 			category: fileCategory,
 			f1: true,
-			precondition: OpenFolderWorkspaceSupportContext,
+			precondition: ContextKeyExpr.and(IsMacNativeContext.toNegated(), OpenFolderWorkspaceSupportContext),
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
-				primary: undefined,
-				linux: {
-					primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KEY_K, KeyMod.CtrlCmd | KeyCode.KEY_O)
-				},
-				win: {
-					primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KEY_K, KeyMod.CtrlCmd | KeyCode.KEY_O)
-				}
+				primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KEY_K, KeyMod.CtrlCmd | KeyCode.KEY_O)
 			}
 		});
 	}
@@ -114,7 +108,7 @@ class OpenWorkspaceAction extends Action2 {
 	constructor() {
 		super({
 			id: OpenWorkspaceAction.ID,
-			title: { value: localize('openWorkspaceAction', "Open Workspace from File..."), original: 'Open Workspace from File...' },
+			title: { value: localize('openWorkspaceAction', "Open Workspace..."), original: 'Open Workspace...' },
 			category: fileCategory,
 			f1: true,
 			precondition: EnterMultiRootWorkspaceSupportContext
@@ -320,7 +314,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarFileMenu, {
 		title: localize({ key: 'miOpenFolder', comment: ['&& denotes a mnemonic'] }, "Open &&Folder...")
 	},
 	order: 2,
-	when: OpenFolderWorkspaceSupportContext
+	when: ContextKeyExpr.and(IsMacNativeContext.toNegated(), OpenFolderWorkspaceSupportContext)
 });
 
 MenuRegistry.appendMenuItem(MenuId.MenubarFileMenu, {
@@ -337,7 +331,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarFileMenu, {
 	group: '2_open',
 	command: {
 		id: OpenWorkspaceAction.ID,
-		title: localize({ key: 'miOpenWorkspace', comment: ['&& denotes a mnemonic'] }, "Open Wor&&kspace from File...")
+		title: localize({ key: 'miOpenWorkspace', comment: ['&& denotes a mnemonic'] }, "Open Wor&&kspace...")
 	},
 	order: 3,
 	when: EnterMultiRootWorkspaceSupportContext

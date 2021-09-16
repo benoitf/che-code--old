@@ -293,8 +293,7 @@ export abstract class ExtHostDebugServiceBase implements IExtHostDebugService, E
 			repl: options.consoleMode === DebugConsoleMode.MergeWithParent ? 'mergeWithParent' : 'separate',
 			noDebug: options.noDebug,
 			compact: options.compact,
-			debugUI: options.debugUI,
-			suppressSaveBeforeStart: options.suppressSaveBeforeStart
+			debugUI: options.debugUI
 		});
 	}
 
@@ -949,13 +948,7 @@ export class ExtHostVariableResolverService extends AbstractVariableResolverServ
 				}
 				const tabs = editorTabs.tabs.filter(tab => tab.isActive);
 				if (tabs.length > 0) {
-					// Resolve a resource from the tab
-					const asSideBySideResource = tabs[0].resource as { primary?: URI, secondary?: URI } | undefined;
-					if (asSideBySideResource && (asSideBySideResource.primary || asSideBySideResource.secondary)) {
-						return asSideBySideResource.primary ?? asSideBySideResource.secondary;
-					} else {
-						return tabs[0].resource as URI | undefined;
-					}
+					return tabs[0].resource;
 				}
 			}
 			return undefined;

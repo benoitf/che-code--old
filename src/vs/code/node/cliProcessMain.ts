@@ -18,12 +18,10 @@ import { URI } from 'vs/base/common/uri';
 import { Promises } from 'vs/base/node/pfs';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { ConfigurationService } from 'vs/platform/configuration/common/configurationService';
-import { IDownloadService } from 'vs/platform/download/common/download';
-import { DownloadService } from 'vs/platform/download/common/downloadService';
 import { NativeParsedArgs } from 'vs/platform/environment/common/argv';
 import { INativeEnvironmentService } from 'vs/platform/environment/common/environment';
 import { NativeEnvironmentService } from 'vs/platform/environment/node/environmentService';
-import { ExtensionGalleryServiceWithNoStorageService } from 'vs/platform/extensionManagement/common/extensionGalleryService';
+import { ExtensionGalleryService } from 'vs/platform/extensionManagement/common/extensionGalleryService';
 import { IExtensionGalleryService, IExtensionManagementCLIService, IExtensionManagementService } from 'vs/platform/extensionManagement/common/extensionManagement';
 import { ExtensionManagementCLIService } from 'vs/platform/extensionManagement/common/extensionManagementCLIService';
 import { ExtensionManagementService } from 'vs/platform/extensionManagement/node/extensionManagementService';
@@ -43,9 +41,9 @@ import { IProductService } from 'vs/platform/product/common/productService';
 import { IRequestService } from 'vs/platform/request/common/request';
 import { RequestService } from 'vs/platform/request/node/requestService';
 import { resolveCommonProperties } from 'vs/platform/telemetry/common/commonProperties';
-import { ITelemetryService, machineIdKey, TelemetryLevel } from 'vs/platform/telemetry/common/telemetry';
+import { ITelemetryService, machineIdKey } from 'vs/platform/telemetry/common/telemetry';
 import { ITelemetryServiceConfig, TelemetryService } from 'vs/platform/telemetry/common/telemetryService';
-import { combinedAppender, getTelemetryLevel, NullTelemetryService } from 'vs/platform/telemetry/common/telemetryUtils';
+import { combinedAppender, NullTelemetryService } from 'vs/platform/telemetry/common/telemetryUtils';
 import { AppInsightsAppender } from 'vs/platform/telemetry/node/appInsightsAppender';
 import { buildTelemetryMessage } from 'vs/platform/telemetry/node/telemetry';
 
@@ -135,12 +133,9 @@ class CliMain extends Disposable {
 		// Request
 		services.set(IRequestService, new SyncDescriptor(RequestService));
 
-		// Download Service
-		services.set(IDownloadService, new SyncDescriptor(DownloadService));
-
 		// Extensions
 		services.set(IExtensionManagementService, new SyncDescriptor(ExtensionManagementService));
-		services.set(IExtensionGalleryService, new SyncDescriptor(ExtensionGalleryServiceWithNoStorageService));
+		services.set(IExtensionGalleryService, new SyncDescriptor(ExtensionGalleryService));
 		services.set(IExtensionManagementCLIService, new SyncDescriptor(ExtensionManagementCLIService));
 
 		// Localizations
@@ -148,7 +143,7 @@ class CliMain extends Disposable {
 
 		// Telemetry
 		const appenders: AppInsightsAppender[] = [];
-		if (getTelemetryLevel(productService, environmentService) >= TelemetryLevel.USER) {
+		if (environmentService.isBuilt && !environmentService.isExtensionDevelopment && !environmentService.disableTelemetry && productService.enableTelemetry) {
 			if (productService.aiConfig && productService.aiConfig.asimovKey) {
 				appenders.push(new AppInsightsAppender('monacoworkbench', null, productService.aiConfig.asimovKey));
 			}

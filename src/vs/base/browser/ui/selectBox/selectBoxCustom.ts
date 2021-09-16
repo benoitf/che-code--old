@@ -854,12 +854,12 @@ export class SelectBoxList extends Disposable implements ISelectBoxDelegate, ILi
 			}
 		};
 
-		const rendered = renderMarkdown({ value: text }, { actionHandler });
+		const renderedMarkdown = renderMarkdown({ value: text }, { actionHandler });
 
-		rendered.element.classList.add('select-box-description-markdown');
-		cleanRenderedMarkdown(rendered.element);
+		renderedMarkdown.classList.add('select-box-description-markdown');
+		cleanRenderedMarkdown(renderedMarkdown);
 
-		return rendered.element;
+		return renderedMarkdown;
 	}
 
 	// List Focus Change - passive - update details pane with newly focused element's data

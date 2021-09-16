@@ -10,7 +10,8 @@
   },
   "extensionKind": [
     "ui",
-    "workspace"
+    "workspace",
+    "web"
   ],
   "contributes": {
     "languages": [

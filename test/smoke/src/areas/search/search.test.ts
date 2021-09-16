@@ -10,8 +10,7 @@ import { afterSuite, beforeSuite } from '../../utils';
 
 export function setup(opts: minimist.ParsedArgs) {
 	// https://github.com/microsoft/vscode/issues/115244
-	// https://github.com/microsoft/vscode/issues/132218
-	(process.platform === 'win32' ? describe.skip : describe)('Search', () => {
+	describe('Search', () => {
 		beforeSuite(opts);
 
 		after(function () {

@@ -5,8 +5,7 @@
 
 import { Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { IEditorPane, GroupIdentifier, IEditorInputWithOptions, CloseDirection, IEditorPartOptions, IEditorPartOptionsChangeEvent, EditorsOrder, IVisibleEditorPane, IEditorCloseEvent, IEditorMoveEvent, IEditorOpenEvent, IUntypedEditorInput, isEditorInput } from 'vs/workbench/common/editor';
-import { EditorInput } from 'vs/workbench/common/editor/editorInput';
+import { IEditorInput, IEditorPane, GroupIdentifier, IEditorInputWithOptions, CloseDirection, IEditorPartOptions, IEditorPartOptionsChangeEvent, EditorsOrder, IVisibleEditorPane, IEditorCloseEvent, IEditorMoveEvent, IEditorOpenEvent, IUntypedEditorInput, isEditorInput } from 'vs/workbench/common/editor';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IDimension } from 'vs/editor/common/editorCommon';
@@ -89,7 +88,7 @@ export interface ICloseEditorOptions {
 }
 
 export type ICloseEditorsFilter = {
-	except?: EditorInput,
+	except?: IEditorInput,
 	direction?: CloseDirection,
 	savedOnly?: boolean,
 	excludeSticky?: boolean
@@ -100,8 +99,8 @@ export interface ICloseAllEditorsOptions {
 }
 
 export interface IEditorReplacement {
-	editor: EditorInput;
-	replacement: EditorInput;
+	editor: IEditorInput;
+	replacement: IEditorInput;
 	options?: IEditorOptions;
 
 	/**
@@ -133,17 +132,6 @@ export const enum GroupsOrder {
 	 * Groups sorted by grid widget order
 	 */
 	GRID_APPEARANCE
-}
-
-export interface IEditorSideGroup {
-
-	/**
-	 * Open an editor in this group.
-	 *
-	 * @returns a promise that resolves around an IEditor instance unless
-	 * the call failed, or the editor was not opened as active editor.
-	 */
-	openEditor(editor: EditorInput, options?: IEditorOptions): Promise<IEditorPane | undefined>;
 }
 
 export interface IEditorGroupsService {
@@ -200,12 +188,6 @@ export interface IEditorGroupsService {
 	 * An active group is the default location for new editors to open.
 	 */
 	readonly activeGroup: IEditorGroup;
-
-	/**
-	 * A side group allows a subset of methods on a group that is either
-	 * created to the side or picked if already there.
-	 */
-	readonly sideGroup: IEditorSideGroup;
 
 	/**
 	 * All groups that are currently visible in the editor area in the
@@ -416,7 +398,7 @@ export const enum GroupChangeKind {
 
 export interface IGroupChangeEvent {
 	kind: GroupChangeKind;
-	editor?: EditorInput;
+	editor?: IEditorInput;
 	editorIndex?: number;
 }
 
@@ -490,13 +472,13 @@ export interface IEditorGroup {
 	 * The active editor is the currently visible editor of the group
 	 * within the current active editor pane.
 	 */
-	readonly activeEditor: EditorInput | null;
+	readonly activeEditor: IEditorInput | null;
 
 	/**
 	 * The editor in the group that is in preview mode if any. There can
 	 * only ever be one editor in preview mode.
 	 */
-	readonly previewEditor: EditorInput | null;
+	readonly previewEditor: IEditorInput | null;
 
 	/**
 	 * The number of opened editors in this group.
@@ -526,7 +508,7 @@ export interface IEditorGroup {
 	/**
 	 * All opened editors in the group in sequential order of their appearance.
 	 */
-	readonly editors: readonly EditorInput[];
+	readonly editors: readonly IEditorInput[];
 
 	/**
 	 * The scoped context key service for this group.
@@ -539,7 +521,7 @@ export interface IEditorGroup {
 	 * @param order the order of the editors to use
 	 * @param options options to select only specific editors as instructed
 	 */
-	getEditors(order: EditorsOrder, options?: { excludeSticky?: boolean }): readonly EditorInput[];
+	getEditors(order: EditorsOrder, options?: { excludeSticky?: boolean }): readonly IEditorInput[];
 
 	/**
 	 * Finds all editors for the given resource that are currently
@@ -549,17 +531,17 @@ export interface IEditorGroup {
 	 *
 	 * @param resource The resource of the editor to find
 	 */
-	findEditors(resource: URI): readonly EditorInput[];
+	findEditors(resource: URI): readonly IEditorInput[];
 
 	/**
 	 * Returns the editor at a specific index of the group.
 	 */
-	getEditorByIndex(index: number): EditorInput | undefined;
+	getEditorByIndex(index: number): IEditorInput | undefined;
 
 	/**
 	 * Returns the index of the editor in the group or -1 if not opened.
 	 */
-	getIndexOfEditor(editor: EditorInput): number;
+	getIndexOfEditor(editor: IEditorInput): number;
 
 	/**
 	 * Open an editor in this group.
@@ -567,7 +549,7 @@ export interface IEditorGroup {
 	 * @returns a promise that resolves around an IEditor instance unless
 	 * the call failed, or the editor was not opened as active editor.
 	 */
-	openEditor(editor: EditorInput, options?: IEditorOptions): Promise<IEditorPane | undefined>;
+	openEditor(editor: IEditorInput, options?: IEditorOptions): Promise<IEditorPane | undefined>;
 
 	/**
 	 * Opens editors in this group.
@@ -582,48 +564,36 @@ export interface IEditorGroup {
 	/**
 	 * Find out if the provided editor is pinned in the group.
 	 */
-	isPinned(editor: EditorInput): boolean;
+	isPinned(editor: IEditorInput): boolean;
 
 	/**
 	 * Find out if the provided editor or index of editor is sticky in the group.
 	 */
-	isSticky(editorOrIndex: EditorInput | number): boolean;
+	isSticky(editorOrIndex: IEditorInput | number): boolean;
 
 	/**
 	 * Find out if the provided editor is active in the group.
 	 */
-	isActive(editor: EditorInput | IUntypedEditorInput): boolean;
+	isActive(editor: IEditorInput | IUntypedEditorInput): boolean;
 
 	/**
 	 * Find out if a certain editor is included in the group.
 	 *
 	 * @param candidate the editor to find
 	 */
-	contains(candidate: EditorInput | IUntypedEditorInput): boolean;
+	contains(candidate: IEditorInput | IUntypedEditorInput): boolean;
 
 	/**
 	 * Move an editor from this group either within this group or to another group.
 	 */
-	moveEditor(editor: EditorInput, target: IEditorGroup, options?: IEditorOptions): void;
-
-	/**
-	 * Move editors from this group either within this group or to another group.
-	 */
-	moveEditors(editors: IEditorInputWithOptions[], target: IEditorGroup): void;
+	moveEditor(editor: IEditorInput, target: IEditorGroup, options?: IEditorOptions): void;
 
 	/**
 	 * Copy an editor from this group to another group.
 	 *
 	 * Note: It is currently not supported to show the same editor more than once in the same group.
 	 */
-	copyEditor(editor: EditorInput, target: IEditorGroup, options?: IEditorOptions): void;
-
-	/**
-	 * Copy editors from this group to another group.
-	 *
-	 * Note: It is currently not supported to show the same editor more than once in the same group.
-	 */
-	copyEditors(editors: IEditorInputWithOptions[], target: IEditorGroup): void;
+	copyEditor(editor: IEditorInput, target: IEditorGroup, options?: IEditorOptions): void;
 
 	/**
 	 * Close an editor from the group. This may trigger a confirmation dialog if
@@ -634,7 +604,7 @@ export interface IEditorGroup {
 	 *
 	 * @returns a promise when the editor is closed.
 	 */
-	closeEditor(editor?: EditorInput, options?: ICloseEditorOptions): Promise<void>;
+	closeEditor(editor?: IEditorInput, options?: ICloseEditorOptions): Promise<void>;
 
 	/**
 	 * Closes specific editors in this group. This may trigger a confirmation dialog if
@@ -642,7 +612,7 @@ export interface IEditorGroup {
 	 *
 	 * @returns a promise when all editors are closed.
 	 */
-	closeEditors(editors: EditorInput[] | ICloseEditorsFilter, options?: ICloseEditorOptions): Promise<void>;
+	closeEditors(editors: IEditorInput[] | ICloseEditorsFilter, options?: ICloseEditorOptions): Promise<void>;
 
 	/**
 	 * Closes all editors from the group. This may trigger a confirmation dialog if
@@ -669,7 +639,7 @@ export interface IEditorGroup {
 	 * @param editor the editor to pin, or the currently active editor
 	 * if unspecified.
 	 */
-	pinEditor(editor?: EditorInput): void;
+	pinEditor(editor?: IEditorInput): void;
 
 	/**
 	 * Set an editor to be sticky. A sticky editor is showing in the beginning
@@ -678,7 +648,7 @@ export interface IEditorGroup {
 	 * @param editor the editor to make sticky, or the currently active editor
 	 * if unspecified.
 	 */
-	stickEditor(editor?: EditorInput): void;
+	stickEditor(editor?: IEditorInput): void;
 
 	/**
 	 * Set an editor to be non-sticky and thus moves back to a location after
@@ -687,7 +657,7 @@ export interface IEditorGroup {
 	 * @param editor the editor to make unsticky, or the currently active editor
 	 * if unspecified.
 	 */
-	unstickEditor(editor?: EditorInput): void;
+	unstickEditor(editor?: IEditorInput): void;
 
 	/**
 	 * Whether this editor group should be locked or not.

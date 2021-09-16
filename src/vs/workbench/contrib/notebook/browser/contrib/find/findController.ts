@@ -100,10 +100,6 @@ export class NotebookFindWidget extends SimpleFindReplaceWidget implements INote
 	}
 
 	protected replaceOne() {
-		if (!this._notebookEditor.hasModel()) {
-			return;
-		}
-
 		if (!this._findModel.findMatches.length) {
 			return;
 		}
@@ -117,21 +113,15 @@ export class NotebookFindWidget extends SimpleFindReplaceWidget implements INote
 		const { cell, match } = this._findModel.getCurrentMatch();
 		this._progressBar.infinite().show();
 
-		const viewModel = this._notebookEditor._getViewModel();
-		viewModel.replaceOne(cell, match.range, this.replaceValue).then(() => {
+		this._notebookEditor.viewModel!.replaceOne(cell, match.range, this.replaceValue).then(() => {
 			this._progressBar.stop();
 		});
 	}
 
 	protected replaceAll() {
-		if (!this._notebookEditor.hasModel()) {
-			return;
-		}
-
 		this._progressBar.infinite().show();
 
-		const viewModel = this._notebookEditor._getViewModel();
-		viewModel.replaceAll(this._findModel.findMatches, this.replaceValue).then(() => {
+		this._notebookEditor.viewModel!.replaceAll(this._findModel.findMatches, this.replaceValue).then(() => {
 			this._progressBar.stop();
 		});
 	}
@@ -225,15 +215,11 @@ export class NotebookFindWidget extends SimpleFindReplaceWidget implements INote
 			this._previousFocusElement = undefined;
 		}
 
-		if (this._notebookEditor.hasModel()) {
-			for (let i = 0; i < this._notebookEditor.getLength(); i++) {
-				const cell = this._notebookEditor.cellAt(i);
-
-				if (cell.getEditState() === CellEditState.Editing && cell.editStateSource === 'find') {
-					cell.updateEditState(CellEditState.Preview, 'find');
-				}
+		this._notebookEditor.viewModel?.viewCells.forEach(cell => {
+			if (cell.getEditState() === CellEditState.Editing && cell.editStateSource === 'find') {
+				cell.updateEditState(CellEditState.Preview, 'find');
 			}
-		}
+		});
 	}
 
 	override _updateMatchesCount(): void {

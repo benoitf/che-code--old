@@ -13,7 +13,7 @@ import { InputFocusedContextKey } from 'vs/platform/contextkey/common/contextkey
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { Registry } from 'vs/platform/registry/common/platform';
-import { INotebookActionContext, INotebookCellActionContext, NotebookAction, NotebookCellAction, NOTEBOOK_EDITOR_WIDGET_ACTION_WEIGHT } from 'vs/workbench/contrib/notebook/browser/controller/coreActions';
+import { INotebookActionContext, INotebookCellActionContext, NotebookAction, NotebookCellAction, NOTEBOOK_EDITOR_WIDGET_ACTION_WEIGHT } from 'vs/workbench/contrib/notebook/browser/contrib/coreActions';
 import { CellEditState, NOTEBOOK_CELL_HAS_OUTPUTS, NOTEBOOK_EDITOR_FOCUSED, NOTEBOOK_OUTPUT_FOCUSED } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
 import { CellKind, NOTEBOOK_EDITOR_CURSOR_BOUNDARY } from 'vs/workbench/contrib/notebook/common/notebookCommon';
 
@@ -23,7 +23,6 @@ const NOTEBOOK_FOCUS_PREVIOUS_EDITOR = 'notebook.focusPreviousEditor';
 const NOTEBOOK_FOCUS_NEXT_EDITOR = 'notebook.focusNextEditor';
 const FOCUS_IN_OUTPUT_COMMAND_ID = 'notebook.cell.focusInOutput';
 const FOCUS_OUT_OUTPUT_COMMAND_ID = 'notebook.cell.focusOutOutput';
-const CENTER_ACTIVE_CELL = 'notebook.centerActiveCell';
 
 
 registerAction2(class extends NotebookCellAction {
@@ -58,17 +57,17 @@ registerAction2(class extends NotebookCellAction {
 		const editor = context.notebookEditor;
 		const activeCell = context.cell;
 
-		const idx = editor.getCellIndex(activeCell);
+		const idx = editor.viewModel.getCellIndex(activeCell);
 		if (typeof idx !== 'number') {
 			return;
 		}
 
-		if (idx >= editor.getLength()) {
-			// last one
+		const newCell = editor.viewModel.cellAt(idx + 1);
+
+		if (!newCell) {
 			return;
 		}
 
-		const newCell = editor.cellAt(idx + 1);
 		const newFocusMode = newCell.cellKind === CellKind.Markup && newCell.getEditState() === CellEditState.Preview ? 'container' : 'editor';
 		editor.focusNotebookCell(newCell, newFocusMode);
 		editor.cursorNavigationMode = true;
@@ -100,17 +99,22 @@ registerAction2(class extends NotebookCellAction {
 		const editor = context.notebookEditor;
 		const activeCell = context.cell;
 
-		const idx = editor.getCellIndex(activeCell);
+		const idx = editor.viewModel.getCellIndex(activeCell);
 		if (typeof idx !== 'number') {
 			return;
 		}
 
-		if (idx < 1 || editor.getLength() === 0) {
+		if (idx < 1) {
 			// we don't do loop
 			return;
 		}
 
-		const newCell = editor.cellAt(idx - 1);
+		const newCell = editor.viewModel.cellAt(idx - 1);
+
+		if (!newCell) {
+			return;
+		}
+
 		const newFocusMode = newCell.cellKind === CellKind.Markup && newCell.getEditState() === CellEditState.Preview ? 'container' : 'editor';
 		editor.focusNotebookCell(newCell, newFocusMode);
 		editor.cursorNavigationMode = true;
@@ -134,12 +138,14 @@ registerAction2(class extends NotebookAction {
 
 	async runWithContext(accessor: ServicesAccessor, context: INotebookActionContext): Promise<void> {
 		const editor = context.notebookEditor;
-		if (editor.getLength() === 0) {
+		if (!editor.viewModel || !editor.viewModel.length) {
 			return;
 		}
 
-		const firstCell = editor.cellAt(0);
-		editor.focusNotebookCell(firstCell, 'container');
+		const firstCell = editor.viewModel.cellAt(0);
+		if (firstCell) {
+			editor.focusNotebookCell(firstCell, 'container');
+		}
 	}
 });
 
@@ -159,11 +165,11 @@ registerAction2(class extends NotebookAction {
 
 	async runWithContext(accessor: ServicesAccessor, context: INotebookActionContext): Promise<void> {
 		const editor = context.notebookEditor;
-		if (!editor.hasModel() || editor.getLength() === 0) {
+		if (!editor.viewModel || !editor.viewModel.length) {
 			return;
 		}
 
-		const firstCell = editor.cellAt(editor.getLength() - 1);
+		const firstCell = editor.viewModel.cellAt(editor.viewModel.length - 1);
 		if (firstCell) {
 			editor.focusNotebookCell(firstCell, 'container');
 		}
@@ -210,27 +216,6 @@ registerAction2(class extends NotebookCellAction {
 		const editor = context.notebookEditor;
 		const activeCell = context.cell;
 		editor.focusNotebookCell(activeCell, 'editor');
-	}
-});
-
-registerAction2(class CenterActiveCellAction extends NotebookCellAction {
-	constructor() {
-		super({
-			id: CENTER_ACTIVE_CELL,
-			title: localize('notebookActions.centerActiveCell', "Center Active Cell"),
-			keybinding: {
-				when: NOTEBOOK_EDITOR_FOCUSED,
-				primary: KeyMod.CtrlCmd | KeyCode.KEY_L,
-				mac: {
-					primary: KeyMod.WinCtrl | KeyCode.KEY_L,
-				},
-				weight: KeybindingWeight.WorkbenchContrib
-			},
-		});
-	}
-
-	async runWithContext(accessor: ServicesAccessor, context: INotebookCellActionContext): Promise<void> {
-		return context.notebookEditor.revealInCenter(context.cell);
 	}
 });
 

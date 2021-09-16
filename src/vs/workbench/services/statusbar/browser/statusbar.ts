@@ -9,7 +9,6 @@ import { ThemeColor } from 'vs/platform/theme/common/themeService';
 import { Event } from 'vs/base/common/event';
 import { Command } from 'vs/editor/common/modes';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { IStatusbarEntryLocation } from 'vs/workbench/browser/parts/statusbar/statusbarModel';
 
 export const IStatusbarService = createDecorator<IStatusbarService>('statusbarService');
 
@@ -17,11 +16,6 @@ export const enum StatusbarAlignment {
 	LEFT,
 	RIGHT
 }
-
-export const ShowTooltipCommand: Command = {
-	id: 'statusBar.entry.showTooltip',
-	title: ''
-};
 
 /**
  * A declarative way of describing a status bar entry
@@ -55,7 +49,7 @@ export interface IStatusbarEntry {
 	/**
 	 * An optional tooltip text to show when you hover over the entry
 	 */
-	readonly tooltip?: string | IMarkdownString | HTMLElement;
+	readonly tooltip?: string | IMarkdownString;
 
 	/**
 	 * An optional color to use for the entry
@@ -68,12 +62,9 @@ export interface IStatusbarEntry {
 	readonly backgroundColor?: string | ThemeColor;
 
 	/**
-	 * An optional command to execute on click.
-	 *
-	 * Can use the special `ShowTooltipCommand` to
-	 * show the tooltip on click if provided.
+	 * An optional id of a command that is known to the workbench to execute on click
 	 */
-	readonly command?: string | Command | typeof ShowTooltipCommand;
+	readonly command?: string | Command;
 
 	/**
 	 * Whether to show a beak above the status bar entry.
@@ -84,6 +75,7 @@ export interface IStatusbarEntry {
 	 * Will enable a spinning icon in front of the text to indicate progress.
 	 */
 	readonly showProgress?: boolean;
+
 }
 
 export interface IStatusbarService {
@@ -91,30 +83,20 @@ export interface IStatusbarService {
 	readonly _serviceBrand: undefined;
 
 	/**
-	 * An event that is triggered when an entry's visibility is changed.
-	 */
-	readonly onDidChangeEntryVisibility: Event<{ id: string, visible: boolean }>;
-
-	/**
 	 * Adds an entry to the statusbar with the given alignment and priority. Use the returned accessor
 	 * to update or remove the statusbar entry.
 	 *
-	 * @param id identifier of the entry is needed to allow users to hide entries via settings
-	 * @param alignment either LEFT or RIGHT side in the status bar
+	 * @param id  identifier of the entry is needed to allow users to hide entries via settings
+	 * @param alignment either LEFT or RIGHT
 	 * @param priority items get arranged from highest priority to lowest priority from left to right
 	 * in their respective alignment slot
 	 */
 	addEntry(entry: IStatusbarEntry, id: string, alignment: StatusbarAlignment, priority?: number): IStatusbarEntryAccessor;
 
 	/**
-	 * Adds an entry to the statusbar with the given alignment relative to another entry. Use the returned
-	 * accessor to update or remove the statusbar entry.
-	 *
-	 * @param id identifier of the entry is needed to allow users to hide entries via settings
-	 * @param alignment either LEFT or RIGHT side in the status bar
-	 * @param location a reference to another entry to position relative to
+	 * An event that is triggered when an entry's visibility is changed.
 	 */
-	addEntry(entry: IStatusbarEntry, id: string, alignment: StatusbarAlignment, location?: IStatusbarEntryLocation): IStatusbarEntryAccessor;
+	readonly onDidChangeEntryVisibility: Event<{ id: string, visible: boolean }>;
 
 	/**
 	 * Return if an entry is visible or not.

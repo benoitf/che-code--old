@@ -26,7 +26,6 @@ import { FileWatcher as UnixWatcherService } from 'vs/platform/files/node/watche
 import { IDiskFileChange, ILogMessage, toFileChanges } from 'vs/platform/files/node/watcher/watcher';
 import { FileWatcher as WindowsWatcherService } from 'vs/platform/files/node/watcher/win32/watcherService';
 import { ILogService, LogLevel } from 'vs/platform/log/common/log';
-import product from 'vs/platform/product/common/product';
 
 export interface IWatcherOptions {
 	pollingInterval?: number;
@@ -607,10 +606,9 @@ export class DiskFileSystemProvider extends Disposable implements
 					watcherOptions = this.options?.watcher;
 				}
 
+				// Single Folder Watcher
 				else {
-
-					// Single Folder Watcher (stable only)
-					if (product.quality === 'stable' && this.recursiveFoldersToWatch.length === 1) {
+					if (this.recursiveFoldersToWatch.length === 1) {
 						if (isWindows) {
 							watcherImpl = WindowsWatcherService;
 						} else {
@@ -618,7 +616,7 @@ export class DiskFileSystemProvider extends Disposable implements
 						}
 					}
 
-					// NSFW: Multi Folder Watcher or insiders
+					// Multi Folder Watcher
 					else {
 						watcherImpl = NsfwWatcherService;
 					}

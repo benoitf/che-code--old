@@ -17,9 +17,7 @@ export class NotificationsAlerts extends Disposable {
 		super();
 
 		// Alert initial notifications if any
-		for (const notification of model.notifications) {
-			this.triggerAriaAlert(notification);
-		}
+		model.notifications.forEach(n => this.triggerAriaAlert(n));
 
 		this.registerListeners();
 	}

@@ -87,7 +87,7 @@ interface IFormatParseTree {
 	children?: IFormatParseTree[];
 }
 
-function _renderFormattedText(element: Node, treeNode: IFormatParseTree, actionHandler?: IContentActionHandler, renderCodeSegments?: boolean) {
+function _renderFormattedText(element: Node, treeNode: IFormatParseTree, actionHandler?: IContentActionHandler, renderCodeSegements?: boolean) {
 	let child: Node | undefined;
 
 	if (treeNode.type === FormatType.Text) {
@@ -96,7 +96,7 @@ function _renderFormattedText(element: Node, treeNode: IFormatParseTree, actionH
 		child = document.createElement('b');
 	} else if (treeNode.type === FormatType.Italics) {
 		child = document.createElement('i');
-	} else if (treeNode.type === FormatType.Code && renderCodeSegments) {
+	} else if (treeNode.type === FormatType.Code && renderCodeSegements) {
 		child = document.createElement('code');
 	} else if (treeNode.type === FormatType.Action && actionHandler) {
 		const a = document.createElement('a');
@@ -118,7 +118,7 @@ function _renderFormattedText(element: Node, treeNode: IFormatParseTree, actionH
 
 	if (child && Array.isArray(treeNode.children)) {
 		treeNode.children.forEach((nodeChild) => {
-			_renderFormattedText(child!, nodeChild, actionHandler, renderCodeSegments);
+			_renderFormattedText(child!, nodeChild, actionHandler, renderCodeSegements);
 		});
 	}
 }

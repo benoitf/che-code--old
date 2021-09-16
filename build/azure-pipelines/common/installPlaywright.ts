@@ -4,10 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { retry } from './retry';
-const { installDefaultBrowsersForNpmInstall } = require('playwright/lib/utils/registry');
+const { installBrowsersWithProgressBar } = require('playwright/lib/install/installer');
 
 async function install() {
-	await retry(() => installDefaultBrowsersForNpmInstall());
+	await retry(() => installBrowsersWithProgressBar());
 }
 
 install();

@@ -56,7 +56,6 @@ const mapping: ReadonlyMap<string, string> = new Map([
 	['theme-info-foreground', 'vscode-foreground'],
 	// Notebook:
 	['theme-notebook-output-background', 'vscode-notebook-outputContainerBackgroundColor'],
-	['theme-notebook-output-border', 'vscode-notebook-outputContainerBorderColor'],
 	['theme-notebook-cell-selected-background', 'vscode-notebook-selectedCellBackground'],
 	['theme-notebook-symbol-highlight-background', 'vscode-notebook-symbolHighlightBackground'],
 	['theme-notebook-diff-removed-background', 'vscode-diffEditor-removedTextBackground'],

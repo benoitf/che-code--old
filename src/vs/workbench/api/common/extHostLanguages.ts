@@ -3,37 +3,30 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { MainContext, MainThreadLanguagesShape, IMainContext, ExtHostLanguagesShape } from './extHost.protocol';
+import { MainContext, MainThreadLanguagesShape, IMainContext } from './extHost.protocol';
 import type * as vscode from 'vscode';
 import { ExtHostDocuments } from 'vs/workbench/api/common/extHostDocuments';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import { StandardTokenType, Range, Position, LanguageStatusSeverity } from 'vs/workbench/api/common/extHostTypes';
 import Severity from 'vs/base/common/severity';
 import { disposableTimeout } from 'vs/base/common/async';
-import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
-import { IExtensionDescription } from 'vs/platform/extensions/common/extensions';
-import { CommandsConverter } from 'vs/workbench/api/common/extHostCommands';
+import { IDisposable } from 'vs/base/common/lifecycle';
 
-export class ExtHostLanguages implements ExtHostLanguagesShape {
+export class ExtHostLanguages {
 
 	private readonly _proxy: MainThreadLanguagesShape;
-
-	private _languageIds: string[] = [];
+	private readonly _documents: ExtHostDocuments;
 
 	constructor(
 		mainContext: IMainContext,
-		private readonly _documents: ExtHostDocuments,
-		private readonly _commands: CommandsConverter
+		documents: ExtHostDocuments
 	) {
 		this._proxy = mainContext.getProxy(MainContext.MainThreadLanguages);
+		this._documents = documents;
 	}
 
-	$acceptLanguageIds(ids: string[]): void {
-		this._languageIds = ids;
-	}
-
-	async getLanguages(): Promise<string[]> {
-		return this._languageIds.slice(0);
+	getLanguages(): Promise<string[]> {
+		return this._proxy.$getLanguages();
 	}
 
 	async changeLanguage(uri: vscode.Uri, languageId: string): Promise<vscode.TextDocument> {
@@ -73,68 +66,33 @@ export class ExtHostLanguages implements ExtHostLanguagesShape {
 	}
 
 	private _handlePool: number = 0;
-	private _ids = new Set<string>();
 
-	createLanguageStatusItem(extension: IExtensionDescription, id: string, selector: vscode.DocumentSelector): vscode.LanguageStatusItem {
+	createLanguageStatusItem(selector: vscode.DocumentSelector): vscode.LanguageStatusItem {
 
 		const handle = this._handlePool++;
 		const proxy = this._proxy;
-		const ids = this._ids;
 
-		// enforce extension unique identifier
-		const fullyQualifiedId = `${extension.identifier.value}/${id}`;
-		if (ids.has(fullyQualifiedId)) {
-			throw new Error(`LanguageStatusItem with id '${id}' ALREADY exists`);
-		}
-		ids.add(fullyQualifiedId);
-
-		const data: Omit<vscode.LanguageStatusItem, 'dispose'> = {
+		const data: { selector: any, text: string, detail: string | vscode.MarkdownString, severity: vscode.LanguageStatusSeverity } = {
 			selector,
-			id,
-			name: extension.displayName ?? extension.name,
-			severity: LanguageStatusSeverity.Information,
-			command: undefined,
 			text: '',
 			detail: '',
+			severity: LanguageStatusSeverity.Information,
 		};
 
 		let soonHandle: IDisposable | undefined;
-		let commandDisposables = new DisposableStore();
 		const updateAsync = () => {
 			soonHandle?.dispose();
 			soonHandle = disposableTimeout(() => {
-				commandDisposables.clear();
 				this._proxy.$setLanguageStatus(handle, {
-					id: fullyQualifiedId,
-					name: data.name ?? extension.displayName ?? extension.name,
-					source: extension.displayName ?? extension.name,
 					selector: data.selector,
-					label: data.text,
-					detail: data.detail ?? '',
-					severity: data.severity === LanguageStatusSeverity.Error ? Severity.Error : data.severity === LanguageStatusSeverity.Warning ? Severity.Warning : Severity.Info,
-					command: data.command && this._commands.toInternal(data.command, commandDisposables),
-					accessibilityInfo: data.accessibilityInformation
+					text: data.text,
+					message: typeof data.detail === 'string' ? data.detail : typeConvert.MarkdownString.from(data.detail),
+					severity: data.severity === LanguageStatusSeverity.Error ? Severity.Error : data.severity === LanguageStatusSeverity.Warning ? Severity.Warning : Severity.Info
 				});
 			}, 0);
 		};
 
 		const result: vscode.LanguageStatusItem = {
-			dispose() {
-				commandDisposables.dispose();
-				soonHandle?.dispose();
-				proxy.$removeLanguageStatus(handle);
-				ids.delete(fullyQualifiedId);
-			},
-			get id() {
-				return data.id;
-			},
-			get name() {
-				return data.name;
-			},
-			set name(value) {
-				data.name = value;
-				updateAsync();
-			},
 			get selector() {
 				return data.selector;
 			},
@@ -163,19 +121,9 @@ export class ExtHostLanguages implements ExtHostLanguagesShape {
 				data.severity = value;
 				updateAsync();
 			},
-			get accessibilityInformation() {
-				return data.accessibilityInformation;
-			},
-			set accessibilityInformation(value) {
-				data.accessibilityInformation = value;
-				updateAsync();
-			},
-			get command() {
-				return data.command;
-			},
-			set command(value) {
-				data.command = value;
-				updateAsync();
+			dispose() {
+				soonHandle?.dispose();
+				proxy.$removeLanguageStatus(handle);
 			}
 		};
 		updateAsync();

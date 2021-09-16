@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { findFirstInSorted } from 'vs/base/common/arrays';
-import { Emitter, Event } from 'vs/base/common/event';
+import { Event, Emitter } from 'vs/base/common/event';
+import { Range, IRange } from 'vs/editor/common/core/range';
+import { FoldingModel, CollapseMemento } from 'vs/editor/contrib/folding/foldingModel';
 import { IDisposable } from 'vs/base/common/lifecycle';
-import { IRange, Range } from 'vs/editor/common/core/range';
 import { Selection } from 'vs/editor/common/core/selection';
-import { CollapseMemento, FoldingModel } from 'vs/editor/contrib/folding/foldingModel';
+import { findFirstInSorted } from 'vs/base/common/arrays';
 
 export class HiddenRangeModel {
 	private readonly _foldingModel: FoldingModel;

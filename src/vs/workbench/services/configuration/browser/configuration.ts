@@ -849,7 +849,6 @@ export class FolderConfiguration extends Disposable {
 	private cachedFolderConfiguration: CachedFolderConfiguration;
 
 	constructor(
-		useCache: boolean,
 		readonly workspaceFolder: IWorkspaceFolder,
 		configFolderRelativePath: string,
 		private readonly workbenchState: WorkbenchState,
@@ -864,7 +863,7 @@ export class FolderConfiguration extends Disposable {
 		this.scopes = WorkbenchState.WORKSPACE === this.workbenchState ? FOLDER_SCOPES : WORKSPACE_SCOPES;
 		this.configurationFolder = uriIdentityService.extUri.joinPath(workspaceFolder.uri, configFolderRelativePath);
 		this.cachedFolderConfiguration = new CachedFolderConfiguration(workspaceFolder.uri, configFolderRelativePath, { scopes: this.scopes, skipRestricted: this.isUntrusted() }, configurationCache);
-		if (useCache && this.configurationCache.needsCaching(workspaceFolder.uri)) {
+		if (this.configurationCache.needsCaching(workspaceFolder.uri)) {
 			this.folderConfiguration = this.cachedFolderConfiguration;
 			whenProviderRegistered(workspaceFolder.uri, fileService)
 				.then(() => {

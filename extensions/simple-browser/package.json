@@ -18,7 +18,8 @@
   ],
   "extensionKind": [
     "ui",
-    "workspace"
+    "workspace",
+    "web"
   ],
   "activationEvents": [
     "onCommand:simpleBrowser.show",

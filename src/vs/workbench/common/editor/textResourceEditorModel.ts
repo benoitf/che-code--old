@@ -8,7 +8,6 @@ import { URI } from 'vs/base/common/uri';
 import { IModeService } from 'vs/editor/common/services/modeService';
 import { IModelService } from 'vs/editor/common/services/modelService';
 import { ILanguageDetectionService } from 'vs/workbench/services/languageDetection/common/languageDetectionWorkerService';
-import { IAccessibilityService } from 'vs/platform/accessibility/common/accessibility';
 
 /**
  * An editor model for in-memory, readonly text content that
@@ -20,10 +19,9 @@ export class TextResourceEditorModel extends BaseTextEditorModel {
 		resource: URI,
 		@IModeService modeService: IModeService,
 		@IModelService modelService: IModelService,
-		@ILanguageDetectionService languageDetectionService: ILanguageDetectionService,
-		@IAccessibilityService accessibilityService: IAccessibilityService,
+		@ILanguageDetectionService languageDetectionService: ILanguageDetectionService
 	) {
-		super(modelService, modeService, languageDetectionService, accessibilityService, resource);
+		super(modelService, modeService, languageDetectionService, resource);
 	}
 
 	override dispose(): void {

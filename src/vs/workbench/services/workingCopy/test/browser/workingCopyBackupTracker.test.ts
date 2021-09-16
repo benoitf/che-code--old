@@ -55,10 +55,9 @@ suite('WorkingCopyBackupTracker (browser)', function () {
 			@ILifecycleService lifecycleService: ILifecycleService,
 			@ILogService logService: ILogService,
 			@IWorkingCopyEditorService workingCopyEditorService: IWorkingCopyEditorService,
-			@IEditorService editorService: IEditorService,
-			@IEditorGroupsService editorGroupService: IEditorGroupsService
+			@IEditorService editorService: IEditorService
 		) {
-			super(workingCopyBackupService, filesConfigurationService, workingCopyService, lifecycleService, logService, workingCopyEditorService, editorService, editorGroupService);
+			super(workingCopyBackupService, filesConfigurationService, workingCopyService, lifecycleService, logService, workingCopyEditorService, editorService);
 		}
 
 		protected override getBackupScheduleDelay(): number {
@@ -93,10 +92,10 @@ suite('WorkingCopyBackupTracker (browser)', function () {
 		instantiationService.stub(IWorkingCopyBackupService, workingCopyBackupService);
 
 		const part = await createEditorPart(instantiationService, disposables);
-		instantiationService.stub(IEditorGroupsService, part);
 
 		disposables.add(registerTestResourceEditor());
 
+		instantiationService.stub(IEditorGroupsService, part);
 		instantiationService.stub(IWorkspaceTrustRequestService, new TestWorkspaceTrustRequestService(false));
 
 		const editorService: EditorService = instantiationService.createInstance(EditorService);
@@ -202,8 +201,8 @@ suite('WorkingCopyBackupTracker (browser)', function () {
 		instantiationService.stub(IWorkingCopyBackupService, workingCopyBackupService);
 
 		const part = await createEditorPart(instantiationService, disposables);
-		instantiationService.stub(IEditorGroupsService, part);
 
+		instantiationService.stub(IEditorGroupsService, part);
 		instantiationService.stub(IWorkspaceTrustRequestService, new TestWorkspaceTrustRequestService(false));
 
 		const editorService: EditorService = instantiationService.createInstance(EditorService);

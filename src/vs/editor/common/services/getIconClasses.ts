@@ -64,7 +64,7 @@ export function getIconClassesForModeId(modeId: string): string[] {
 	return ['file-icon', `${cssEscape(modeId)}-lang-file-icon`];
 }
 
-function detectModeId(modelService: IModelService, modeService: IModeService, resource: uri): string | null {
+export function detectModeId(modelService: IModelService, modeService: IModeService, resource: uri): string | null {
 	if (!resource) {
 		return null; // we need a resource at least
 	}

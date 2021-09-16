@@ -48,11 +48,7 @@ export function afterSuite(opts: minimist.ParsedArgs) {
 
 		if (this.currentTest?.state === 'failed' && opts.screenshots) {
 			const name = this.currentTest!.fullTitle().replace(/[^a-z0-9\-]/ig, '_');
-			try {
-				await app.captureScreenshot(name);
-			} catch (error) {
-				// ignore
-			}
+			await app.captureScreenshot(name);
 		}
 
 		if (app) {

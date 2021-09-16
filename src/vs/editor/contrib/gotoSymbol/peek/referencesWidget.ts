@@ -3,18 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import 'vs/css!./referencesWidget';
 import * as dom from 'vs/base/browser/dom';
 import { IMouseEvent } from 'vs/base/browser/mouseEvent';
 import { Orientation } from 'vs/base/browser/ui/sash/sash';
-import { Sizing, SplitView } from 'vs/base/browser/ui/splitview/splitview';
 import { Color } from 'vs/base/common/color';
 import { Emitter, Event } from 'vs/base/common/event';
-import { FuzzyScore } from 'vs/base/common/filters';
-import { KeyCode } from 'vs/base/common/keyCodes';
-import { DisposableStore, dispose, IDisposable, IReference } from 'vs/base/common/lifecycle';
+import { dispose, IDisposable, IReference, DisposableStore } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
 import { basenameOrAuthority, dirname } from 'vs/base/common/resources';
-import 'vs/css!./referencesWidget';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EmbeddedCodeEditorWidget } from 'vs/editor/browser/widget/embeddedCodeEditorWidget';
 import { IEditorOptions } from 'vs/editor/common/config/editorOptions';
@@ -24,17 +21,20 @@ import { IModelDeltaDecoration, TrackedRangeStickiness } from 'vs/editor/common/
 import { ModelDecorationOptions, TextModel } from 'vs/editor/common/model/textModel';
 import { Location } from 'vs/editor/common/modes';
 import { ITextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
-import { AccessibilityProvider, DataSource, Delegate, FileReferencesRenderer, IdentityProvider, OneReferenceRenderer, StringRepresentationProvider, TreeElement } from 'vs/editor/contrib/gotoSymbol/peek/referencesTree';
-import * as peekView from 'vs/editor/contrib/peekView/peekView';
+import { AccessibilityProvider, DataSource, Delegate, FileReferencesRenderer, OneReferenceRenderer, TreeElement, StringRepresentationProvider, IdentityProvider } from 'vs/editor/contrib/gotoSymbol/peek/referencesTree';
 import * as nls from 'vs/nls';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { ILabelService } from 'vs/platform/label/common/label';
-import { IWorkbenchAsyncDataTreeOptions, WorkbenchAsyncDataTree } from 'vs/platform/list/browser/listService';
+import { WorkbenchAsyncDataTree, IWorkbenchAsyncDataTreeOptions } from 'vs/platform/list/browser/listService';
 import { activeContrastBorder } from 'vs/platform/theme/common/colorRegistry';
 import { IColorTheme, IThemeService, registerThemingParticipant } from 'vs/platform/theme/common/themeService';
-import { IUndoRedoService } from 'vs/platform/undoRedo/common/undoRedo';
+import * as peekView from 'vs/editor/contrib/peekView/peekView';
 import { FileReferences, OneReference, ReferencesModel } from '../referencesModel';
+import { FuzzyScore } from 'vs/base/common/filters';
+import { SplitView, Sizing } from 'vs/base/browser/ui/splitview/splitview';
+import { IUndoRedoService } from 'vs/platform/undoRedo/common/undoRedo';
+import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
+import { KeyCode } from 'vs/base/common/keyCodes';
 
 
 class DecorationsManager implements IDisposable {

@@ -699,7 +699,7 @@ export class CustomMenubarControl extends MenubarControl {
 								if (!this.focusInsideMenubar) {
 									const actions: IAction[] = [];
 									updateActions(menu, actions, topLevelTitle);
-									if (this.menubar && this.topLevelTitles[topLevelTitle]) {
+									if (this.menubar) {
 										this.menubar.updateMenu({ actions: actions, label: mnemonicMenuLabel(this.topLevelTitles[topLevelTitle]) });
 									}
 								}

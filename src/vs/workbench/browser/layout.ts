@@ -610,7 +610,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 					const diffEditorInput: IUntypedEditorInput[] = [{
 						original: { resource: filesToDiff[0].resource },
 						modified: { resource: filesToDiff[1].resource },
-						options: { pinned: true }
+						options: { pinned: true },
+						forceFile: true
 					}];
 
 					return diffEditorInput;
@@ -1291,17 +1292,15 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		let smartActive = active;
 		const activeEditor = this.editorService.activeEditor;
 
-		let isEditorSplit = false;
-		if (activeEditor instanceof DiffEditorInput) {
-			isEditorSplit = this.configurationService.getValue('diffEditor.renderSideBySide');
-		} else if (activeEditor instanceof SideBySideEditorInput) {
-			isEditorSplit = true;
-		}
+		const isSideBySideLayout = activeEditor
+			&& activeEditor instanceof SideBySideEditorInput
+			// DiffEditorInput inherits from SideBySideEditorInput but can still be functionally an inline editor.
+			&& (!(activeEditor instanceof DiffEditorInput) || this.configurationService.getValue('diffEditor.renderSideBySide'));
 
 		const isCenteredLayoutAutoResizing = this.configurationService.getValue('workbench.editor.centeredLayoutAutoResize');
 		if (
-			isCenteredLayoutAutoResizing &&
-			(this.editorGroupService.groups.length > 1 || isEditorSplit)
+			isCenteredLayoutAutoResizing
+			&& (this.editorGroupService.groups.length > 1 || isSideBySideLayout)
 		) {
 			smartActive = false;
 		}

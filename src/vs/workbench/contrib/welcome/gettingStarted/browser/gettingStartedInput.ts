@@ -8,7 +8,7 @@ import { localize } from 'vs/nls';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import { URI } from 'vs/base/common/uri';
 import { Schemas } from 'vs/base/common/network';
-import { IUntypedEditorInput } from 'vs/workbench/common/editor';
+import { IEditorInput, IUntypedEditorInput } from 'vs/workbench/common/editor';
 
 export const gettingStartedInputTypeId = 'workbench.editors.gettingStartedInput';
 
@@ -25,7 +25,7 @@ export class GettingStartedInput extends EditorInput {
 		return GettingStartedInput.RESOURCE;
 	}
 
-	override matches(other: EditorInput | IUntypedEditorInput): boolean {
+	override matches(other: IEditorInput | IUntypedEditorInput): boolean {
 		if (super.matches(other)) {
 			return true;
 		}

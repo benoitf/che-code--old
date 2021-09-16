@@ -17,6 +17,7 @@ import { IFileMatch, IFileSearchStats, IFolderQuery, ISearchComplete, ISearchPro
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { NullTelemetryService } from 'vs/platform/telemetry/common/telemetryUtils';
 import { SearchModel } from 'vs/workbench/contrib/search/common/searchModel';
+import * as process from 'vs/base/common/process';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { TestThemeService } from 'vs/platform/theme/test/common/testThemeService';
 import { FileService } from 'vs/platform/files/common/fileService';
@@ -91,7 +92,7 @@ suite('SearchModel', () => {
 		return <ISearchService>{
 			textSearch(query: ISearchQuery, token?: CancellationToken, onProgress?: (result: ISearchProgressItem) => void): Promise<ISearchComplete> {
 				return new Promise(resolve => {
-					queueMicrotask(() => {
+					process.nextTick(() => {
 						results.forEach(onProgress!);
 						resolve(complete!);
 					});
@@ -118,7 +119,7 @@ suite('SearchModel', () => {
 				}
 
 				return new Promise(resolve => {
-					queueMicrotask(() => {
+					process.nextTick(() => {
 						resolve(<any>{});
 					});
 				});

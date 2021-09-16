@@ -7,7 +7,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { asPromise, assertNoRpc, closeAllEditors } from '../utils';
 
-suite('vscode - automatic language detection', () => {
+suite('vscode - untitled automatic language detection', () => {
 
 	teardown(async function () {
 		assertNoRpc();
@@ -15,10 +15,8 @@ suite('vscode - automatic language detection', () => {
 	});
 
 	test('test automatic language detection works', async () => {
-		const receivedEvent = asPromise(vscode.workspace.onDidOpenTextDocument, 5000);
 		const doc = await vscode.workspace.openTextDocument();
 		const editor = await vscode.window.showTextDocument(doc);
-		await receivedEvent;
 
 		assert.strictEqual(editor.document.languageId, 'plaintext');
 
@@ -60,10 +58,7 @@ suite('vscode - automatic language detection', () => {
 		assert.ok(result);
 
 		// Changing the language triggers a file to be closed and opened again so wait for that event to happen.
-		let newDoc;
-		do {
-			newDoc = await asPromise(vscode.workspace.onDidOpenTextDocument, 5000);
-		} while (doc.uri.toString() !== newDoc.uri.toString());
+		const newDoc = await asPromise(vscode.workspace.onDidOpenTextDocument, 5000);
 
 		assert.strictEqual(newDoc.languageId, 'json');
 	});

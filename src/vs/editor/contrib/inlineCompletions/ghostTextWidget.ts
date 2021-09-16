@@ -3,30 +3,30 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Color, RGBA } from 'vs/base/common/color';
-import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import * as strings from 'vs/base/common/strings';
 import 'vs/css!./ghostText';
-import { Configuration } from 'vs/editor/browser/config/configuration';
+import * as dom from 'vs/base/browser/dom';
+import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { Range } from 'vs/editor/common/core/range';
 import { ContentWidgetPositionPreference, ICodeEditor, IContentWidget, IContentWidgetPosition } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
+import * as strings from 'vs/base/common/strings';
+import { RenderLineInput, renderViewLine } from 'vs/editor/common/viewLayout/viewLineRenderer';
 import { EditorFontLigatures, EditorOption, IComputedEditorOptions } from 'vs/editor/common/config/editorOptions';
-import { CursorColumns } from 'vs/editor/common/controller/cursorCommon';
+import { createStringBuilder } from 'vs/editor/common/core/stringBuilder';
+import { Configuration } from 'vs/editor/browser/config/configuration';
 import { LineTokens } from 'vs/editor/common/core/lineTokens';
 import { Position } from 'vs/editor/common/core/position';
-import { Range } from 'vs/editor/common/core/range';
-import { createStringBuilder } from 'vs/editor/common/core/stringBuilder';
-import { IDecorationRenderOptions } from 'vs/editor/common/editorCommon';
-import { IModelDeltaDecoration } from 'vs/editor/common/model';
+import { IThemeService, registerThemingParticipant } from 'vs/platform/theme/common/themeService';
 import { ghostTextBorder, ghostTextForeground } from 'vs/editor/common/view/editorColorRegistry';
-import { LineDecoration } from 'vs/editor/common/viewLayout/lineDecorations';
-import { RenderLineInput, renderViewLine } from 'vs/editor/common/viewLayout/viewLineRenderer';
-import { InlineDecorationType } from 'vs/editor/common/viewModel/viewModel';
+import { RGBA, Color } from 'vs/base/common/color';
+import { CursorColumns } from 'vs/editor/common/controller/cursorCommon';
+import { IDecorationRenderOptions } from 'vs/editor/common/editorCommon';
 import { GhostTextWidgetModel } from 'vs/editor/contrib/inlineCompletions/ghostText';
+import { IModelDeltaDecoration } from 'vs/editor/common/model';
+import { LineDecoration } from 'vs/editor/common/viewLayout/lineDecorations';
+import { InlineDecorationType } from 'vs/editor/common/viewModel/viewModel';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IThemeService, registerThemingParticipant } from 'vs/platform/theme/common/themeService';
 
 const ttPolicy = window.trustedTypes?.createPolicy('editorGhostText', { createHTML: value => value });
 
@@ -497,10 +497,9 @@ registerThemingParticipant((theme, collector) => {
 		const opacity = String(foreground.rgba.a);
 		const color = Color.Format.CSS.format(opaque(foreground))!;
 
-		// `!important` ensures that other decorations don't cause a style conflict (#132017).
-		collector.addRule(`.monaco-editor .ghost-text-decoration { opacity: ${opacity} !important; color: ${color} !important; }`);
-		collector.addRule(`.monaco-editor .ghost-text-decoration-preview { color: ${foreground.toString()} !important; }`);
-		collector.addRule(`.monaco-editor .suggest-preview-text .ghost-text { opacity: ${opacity} !important; color: ${color} !important; }`);
+		collector.addRule(`.monaco-editor .ghost-text-decoration { opacity: ${opacity}; color: ${color}; }`);
+		collector.addRule(`.monaco-editor .ghost-text-decoration-preview { color: ${foreground.toString()}; }`);
+		collector.addRule(`.monaco-editor .suggest-preview-text .ghost-text { opacity: ${opacity}; color: ${color}; }`);
 	}
 
 	const border = theme.getColor(ghostTextBorder);
