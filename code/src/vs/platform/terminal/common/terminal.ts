@@ -64,9 +64,6 @@ export const enum TerminalSettingId {
 	DetectLocale = 'terminal.integrated.detectLocale',
 	DefaultLocation = 'terminal.integrated.defaultLocation',
 	GpuAcceleration = 'terminal.integrated.gpuAcceleration',
-	TerminalTitleSeparator = 'terminal.integrated.tabs.separator',
-	TerminalTitle = 'terminal.integrated.tabs.title',
-	TerminalDescription = 'terminal.integrated.tabs.description',
 	RightClickBehavior = 'terminal.integrated.rightClickBehavior',
 	Cwd = 'terminal.integrated.cwd',
 	ConfirmOnExit = 'terminal.integrated.confirmOnExit',
@@ -143,9 +140,7 @@ export enum TitleEventSource {
 	/** From the process name property*/
 	Process,
 	/** From the VT sequence */
-	Sequence,
-	/** Config changed */
-	Config
+	Sequence
 }
 
 export type ITerminalsLayoutInfo = IRawTerminalsLayoutInfo<IPtyHostAttachTarget | null>;
@@ -176,22 +171,6 @@ export enum TerminalIpcChannels {
 }
 
 export const IPtyService = createDecorator<IPtyService>('ptyService');
-
-export const enum ProcessPropertyType {
-	Cwd = 'cwd',
-	InitialCwd = 'initialCwd'
-}
-
-export interface IProcessProperty<T extends ProcessPropertyType> {
-	type: T,
-	value: IProcessPropertyMap[T]
-}
-
-export interface IProcessPropertyMap {
-	[ProcessPropertyType.Cwd]: string,
-	[ProcessPropertyType.InitialCwd]: string,
-}
-
 export interface IPtyService {
 	readonly _serviceBrand: undefined;
 
@@ -203,7 +182,7 @@ export interface IPtyService {
 
 	readonly onProcessData: Event<{ id: number, event: IProcessDataEvent | string }>;
 	readonly onProcessExit: Event<{ id: number, event: number | undefined }>;
-	readonly onProcessReady: Event<{ id: number, event: { pid: number, cwd: string, capabilities: ProcessCapability[] } }>;
+	readonly onProcessReady: Event<{ id: number, event: { pid: number, cwd: string } }>;
 	readonly onProcessTitleChanged: Event<{ id: number, event: string }>;
 	readonly onProcessShellTypeChanged: Event<{ id: number, event: TerminalShellType }>;
 	readonly onProcessOverrideDimensions: Event<{ id: number, event: ITerminalDimensionsOverride | undefined }>;
@@ -212,7 +191,6 @@ export interface IPtyService {
 	readonly onProcessOrphanQuestion: Event<{ id: number }>;
 	readonly onDidRequestDetach: Event<{ requestId: number, workspaceId: string, instanceId: number }>;
 	readonly onProcessDidChangeHasChildProcesses: Event<{ id: number, event: boolean }>;
-	readonly onDidChangeProperty: Event<{ id: number, property: IProcessProperty<any> }>
 
 	restartPtyHost?(): Promise<void>;
 	shutdownAll?(): Promise<void>;
@@ -262,7 +240,6 @@ export interface IPtyService {
 	reduceConnectionGraceTime(): Promise<void>;
 	requestDetachInstance(workspaceId: string, instanceId: number): Promise<IProcessDetails | undefined>;
 	acceptDetachInstanceReply(requestId: number, persistentProcessId?: number): Promise<void>;
-	refreshProperty(id: number, property: ProcessPropertyType): Promise<any>;
 }
 
 export interface IRequestResolveVariablesEvent {
@@ -461,12 +438,7 @@ export interface ITerminalLaunchError {
 export interface IProcessReadyEvent {
 	pid: number,
 	cwd: string,
-	capabilities: ProcessCapability[],
 	requiresWindowsMode?: boolean
-}
-
-export const enum ProcessCapability {
-	CwdDetection = 'cwdDetection'
 }
 
 /**
@@ -486,11 +458,6 @@ export interface ITerminalChildProcess {
 	 */
 	shouldPersist: boolean;
 
-	/**
-	 * Capabilities of the process, designated when it starts
-	 */
-	capabilities: ProcessCapability[];
-
 	onProcessData: Event<IProcessDataEvent | string>;
 	onProcessExit: Event<number | undefined>;
 	onProcessReady: Event<IProcessReadyEvent>;
@@ -499,7 +466,6 @@ export interface ITerminalChildProcess {
 	onProcessOverrideDimensions?: Event<ITerminalDimensionsOverride | undefined>;
 	onProcessResolvedShellLaunchConfig?: Event<IShellLaunchConfig>;
 	onDidChangeHasChildProcesses?: Event<boolean>;
-	onDidChangeProperty: Event<IProcessProperty<any>>;
 
 	/**
 	 * Starts the process.
@@ -542,7 +508,6 @@ export interface ITerminalChildProcess {
 	getInitialCwd(): Promise<string>;
 	getCwd(): Promise<string>;
 	getLatency(): Promise<number>;
-	refreshProperty(property: ProcessPropertyType): Promise<any>;
 }
 
 export interface IReconnectConstants {

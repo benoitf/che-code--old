@@ -38,8 +38,9 @@ export class NotebookVisibleCellObserver extends Disposable {
 
 	private _onModelChange() {
 		this._viewModelDisposables.clear();
-		if (this._notebookEditor.hasModel()) {
-			this._viewModelDisposables.add(this._notebookEditor.onDidChangeViewCells(() => this.updateEverything()));
+		const vm = this._notebookEditor.viewModel;
+		if (vm) {
+			this._viewModelDisposables.add(vm.onDidChangeViewCells(() => this.updateEverything()));
 		}
 
 		this.updateEverything();
@@ -52,24 +53,25 @@ export class NotebookVisibleCellObserver extends Disposable {
 	}
 
 	private _updateVisibleCells(): void {
-		if (!this._notebookEditor.hasModel()) {
+		const vm = this._notebookEditor.viewModel;
+		if (!vm) {
 			return;
 		}
 
 		const rangesWithEnd = this._notebookEditor.visibleRanges
 			.map(range => ({ start: range.start, end: range.end + 1 }));
 		const newVisibleCells = cellRangesToIndexes(rangesWithEnd)
-			.map(index => this._notebookEditor.cellAt(index) as CellViewModel)
+			.map(index => vm.cellAt(index))
 			.filter(isDefined);
 		const newVisibleHandles = new Set(newVisibleCells.map(cell => cell.handle));
 		const oldVisibleHandles = new Set(this._visibleCells.map(cell => cell.handle));
 		const diff = diffSets(oldVisibleHandles, newVisibleHandles);
 
 		const added = diff.added
-			.map(handle => this._notebookEditor.getCellByHandle(handle) as CellViewModel)
+			.map(handle => vm.getCellByHandle(handle))
 			.filter(isDefined);
 		const removed = diff.removed
-			.map(handle => this._notebookEditor.getCellByHandle(handle) as CellViewModel)
+			.map(handle => vm.getCellByHandle(handle))
 			.filter(isDefined);
 
 		this._visibleCells = newVisibleCells;

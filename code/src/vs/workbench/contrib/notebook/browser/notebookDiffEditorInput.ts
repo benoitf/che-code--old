@@ -3,8 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IResourceDiffEditorInput, IResourceSideBySideEditorInput, isResourceDiffEditorInput, IUntypedEditorInput } from 'vs/workbench/common/editor';
-import { EditorInput } from 'vs/workbench/common/editor/editorInput';
+import { IEditorInput, IResourceDiffEditorInput, isResourceDiffEditorInput, IUntypedEditorInput } from 'vs/workbench/common/editor';
 import { EditorModel } from 'vs/workbench/common/editor/editorModel';
 import { URI } from 'vs/base/common/uri';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -13,7 +12,6 @@ import { IFileService } from 'vs/platform/files/common/files';
 import { DiffEditorInput } from 'vs/workbench/common/editor/diffEditorInput';
 import { NotebookEditorInput } from 'vs/workbench/contrib/notebook/common/notebookEditorInput';
 import { ILabelService } from 'vs/platform/label/common/label';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 class NotebookDiffEditorModel extends EditorModel implements INotebookDiffEditorModel {
 	constructor(
@@ -54,7 +52,6 @@ export class NotebookDiffEditorInput extends DiffEditorInput {
 		public readonly viewType: string,
 		@IFileService fileService: IFileService,
 		@ILabelService labelService: ILabelService,
-		@IEditorService editorService: IEditorService
 	) {
 		super(
 			name,
@@ -63,8 +60,7 @@ export class NotebookDiffEditorInput extends DiffEditorInput {
 			modified,
 			undefined,
 			labelService,
-			fileService,
-			editorService
+			fileService
 		);
 	}
 
@@ -95,21 +91,17 @@ export class NotebookDiffEditorInput extends DiffEditorInput {
 		return this._cachedModel;
 	}
 
-	override toUntyped(): IResourceDiffEditorInput & IResourceSideBySideEditorInput {
-		const original = { resource: this.original.resource };
-		const modified = { resource: this.resource };
+	override toUntyped(): IResourceDiffEditorInput {
 		return {
-			original,
-			modified,
-			primary: modified,
-			secondary: original,
+			original: { resource: this.original.resource },
+			modified: { resource: this.resource },
 			options: {
 				override: this.viewType
 			}
 		};
 	}
 
-	override matches(otherInput: EditorInput | IUntypedEditorInput): boolean {
+	override matches(otherInput: IEditorInput | IUntypedEditorInput): boolean {
 		if (this === otherInput) {
 			return true;
 		}

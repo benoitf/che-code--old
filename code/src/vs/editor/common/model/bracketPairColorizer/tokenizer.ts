@@ -165,7 +165,7 @@ class NonPeekableTextBufferTokenizer {
 			let peekedBracketToken: Token | null = null;
 
 			if (this.lineTokenOffset < tokenCount) {
-				const tokenMetadata = lineTokens.getMetadata(this.lineTokenOffset);
+				let tokenMetadata = lineTokens.getMetadata(this.lineTokenOffset);
 				while (this.lineTokenOffset + 1 < tokenCount && tokenMetadata === lineTokens.getMetadata(this.lineTokenOffset + 1)) {
 					// Skip tokens that are identical.
 					// Sometimes, (bracket) identifiers are split up into multiple tokens.

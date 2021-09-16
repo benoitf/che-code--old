@@ -3,18 +3,18 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { binarySearch } from 'vs/base/common/arrays';
+import { IMarkerService, MarkerSeverity, IMarker } from 'vs/platform/markers/common/markers';
+import { URI } from 'vs/base/common/uri';
 import { Emitter, Event } from 'vs/base/common/event';
 import { DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { LinkedList } from 'vs/base/common/linkedList';
-import { compare } from 'vs/base/common/strings';
-import { URI } from 'vs/base/common/uri';
 import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
+import { compare } from 'vs/base/common/strings';
+import { binarySearch } from 'vs/base/common/arrays';
 import { ITextModel } from 'vs/editor/common/model';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { IMarker, IMarkerService, MarkerSeverity } from 'vs/platform/markers/common/markers';
+import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { LinkedList } from 'vs/base/common/linkedList';
 
 export class MarkerCoordinate {
 	constructor(

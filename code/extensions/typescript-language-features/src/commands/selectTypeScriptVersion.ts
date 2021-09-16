@@ -8,8 +8,7 @@ import { Lazy } from '../utils/lazy';
 import { Command } from './commandManager';
 
 export class SelectTypeScriptVersionCommand implements Command {
-	public static readonly id = 'typescript.selectTypeScriptVersion';
-	public readonly id = SelectTypeScriptVersionCommand.id;
+	public readonly id = 'typescript.selectTypeScriptVersion';
 
 	public constructor(
 		private readonly lazyClientHost: Lazy<TypeScriptServiceClientHost>

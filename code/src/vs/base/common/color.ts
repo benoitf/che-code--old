@@ -432,12 +432,8 @@ export class Color {
 		));
 	}
 
-	private _toString?: string;
 	toString(): string {
-		if (!this._toString) {
-			this._toString = Color.Format.CSS.format(this);
-		}
-		return this._toString;
+		return '' + Color.Format.CSS.format(this);
 	}
 
 	static getLighterColor(of: Color, relative: Color, factor?: number): Color {

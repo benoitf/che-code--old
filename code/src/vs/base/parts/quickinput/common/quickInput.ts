@@ -289,8 +289,6 @@ export interface IQuickPick<T extends IQuickPickItem> extends IQuickInput {
 
 	autoFocusOnList: boolean;
 
-	keepScrollPosition: boolean;
-
 	quickNavigate: IQuickNavigateConfiguration | undefined;
 
 	activeItems: ReadonlyArray<T>;

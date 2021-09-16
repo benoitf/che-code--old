@@ -4,8 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as nls from 'vs/nls';
-import { IRevertOptions, ISaveOptions } from 'vs/workbench/common/editor';
-import { EditorInput } from 'vs/workbench/common/editor/editorInput';
+import { IEditorInput, IRevertOptions, ISaveOptions } from 'vs/workbench/common/editor';
 import { EditorModel } from 'vs/workbench/common/editor/editorModel';
 import { Emitter, Event } from 'vs/base/common/event';
 import { ICellDto2, INotebookEditorModel, INotebookLoadOptions, IResolvedNotebookEditorModel, NotebookCellsChangeType, NotebookData, NotebookDocumentBackupData } from 'vs/workbench/contrib/notebook/common/notebookCommon';
@@ -393,7 +392,7 @@ export class ComplexNotebookEditorModel extends EditorModel implements INotebook
 		});
 	}
 
-	async saveAs(targetResource: URI): Promise<EditorInput | undefined> {
+	async saveAs(targetResource: URI): Promise<IEditorInput | undefined> {
 
 		if (!this.isResolved()) {
 			return undefined;
@@ -545,7 +544,7 @@ export class SimpleNotebookEditorModel extends EditorModel implements INotebookE
 		return this;
 	}
 
-	async saveAs(target: URI): Promise<EditorInput | undefined> {
+	async saveAs(target: URI): Promise<IEditorInput | undefined> {
 		const newWorkingCopy = await this._workingCopyManager.saveAs(this.resource, target);
 		if (!newWorkingCopy) {
 			return undefined;

@@ -61,11 +61,11 @@ import { ISharedProcessConfiguration } from 'vs/platform/sharedProcess/node/shar
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { NativeStorageService } from 'vs/platform/storage/electron-sandbox/storageService';
 import { resolveCommonProperties } from 'vs/platform/telemetry/common/commonProperties';
-import { ICustomEndpointTelemetryService, ITelemetryService, TelemetryLevel } from 'vs/platform/telemetry/common/telemetry';
+import { ICustomEndpointTelemetryService, ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { TelemetryAppenderChannel } from 'vs/platform/telemetry/common/telemetryIpc';
 import { TelemetryLogAppender } from 'vs/platform/telemetry/common/telemetryLogAppender';
 import { TelemetryService } from 'vs/platform/telemetry/common/telemetryService';
-import { combinedAppender, getTelemetryLevel, ITelemetryAppender, NullAppender, NullTelemetryService } from 'vs/platform/telemetry/common/telemetryUtils';
+import { combinedAppender, ITelemetryAppender, NullAppender, NullTelemetryService } from 'vs/platform/telemetry/common/telemetryUtils';
 import { AppInsightsAppender } from 'vs/platform/telemetry/node/appInsightsAppender';
 import { CustomEndpointTelemetryService } from 'vs/platform/telemetry/node/customEndpointTelemetryService';
 import { LocalReconnectConstants, TerminalIpcChannels, TerminalSettingId } from 'vs/platform/terminal/common/terminal';
@@ -211,14 +211,13 @@ class SharedProcessMain extends Disposable {
 		// Telemetry
 		let telemetryService: ITelemetryService;
 		let telemetryAppender: ITelemetryAppender;
-		let telemetryLevel = getTelemetryLevel(productService, environmentService);
-		if (telemetryLevel >= TelemetryLevel.LOG) {
+		if (!environmentService.isExtensionDevelopment && !environmentService.disableTelemetry && productService.enableTelemetry) {
 			telemetryAppender = new TelemetryLogAppender(loggerService, environmentService);
 
-			const { appRoot, extensionsPath, installSourcePath } = environmentService;
+			const { appRoot, extensionsPath, isBuilt, installSourcePath } = environmentService;
 
 			// Application Insights
-			if (productService.aiConfig && productService.aiConfig.asimovKey && telemetryLevel >= TelemetryLevel.USER) {
+			if (productService.aiConfig && productService.aiConfig.asimovKey && isBuilt) {
 				const appInsightsAppender = new AppInsightsAppender('monacoworkbench', null, productService.aiConfig.asimovKey);
 				this._register(toDisposable(() => appInsightsAppender.flush())); // Ensure the AI appender is disposed so that it flushes remaining data
 				telemetryAppender = combinedAppender(appInsightsAppender, telemetryAppender);

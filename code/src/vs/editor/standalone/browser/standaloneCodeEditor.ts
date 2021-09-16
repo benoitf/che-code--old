@@ -5,7 +5,7 @@
 
 import * as aria from 'vs/base/browser/ui/aria/aria';
 import { Disposable, IDisposable, toDisposable, DisposableStore } from 'vs/base/common/lifecycle';
-import { ICodeEditor, IDiffEditor, IDiffEditorConstructionOptions, IEditorConstructionOptions } from 'vs/editor/browser/editorBrowser';
+import { ICodeEditor, IDiffEditor, IEditorConstructionOptions } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditorWidget';
 import { DiffEditorWidget } from 'vs/editor/browser/widget/diffEditorWidget';
@@ -165,12 +165,12 @@ export interface IStandaloneEditorConstructionOptions extends IEditorConstructio
 	model?: ITextModel | null;
 	/**
 	 * The initial value of the auto created model in the editor.
-	 * To not automatically create a model, use `model: null`.
+	 * To not create automatically a model, use `model: null`.
 	 */
 	value?: string;
 	/**
 	 * The initial language of the auto created model in the editor.
-	 * To not automatically create a model, use `model: null`.
+	 * To not create automatically a model, use `model: null`.
 	 */
 	language?: string;
 	/**
@@ -193,17 +193,12 @@ export interface IStandaloneEditorConstructionOptions extends IEditorConstructio
 	 * Defaults to "https://go.microsoft.com/fwlink/?linkid=852450"
 	 */
 	accessibilityHelpUrl?: string;
-	/**
-	 * Container element to use for ARIA messages.
-	 * Defaults to document.body.
-	 */
-	ariaContainerElement?: HTMLElement;
 }
 
 /**
  * The options to create a diff editor.
  */
-export interface IStandaloneDiffEditorConstructionOptions extends IDiffEditorConstructionOptions {
+export interface IDiffEditorConstructionOptions extends IDiffEditorOptions {
 	/**
 	 * Initial theme to be used for rendering.
 	 * The current out-of-the-box available themes are: 'vs' (default), 'vs-dark', 'hc-black'.
@@ -238,19 +233,12 @@ export interface IStandaloneDiffEditor extends IDiffEditor {
 let LAST_GENERATED_COMMAND_ID = 0;
 
 let ariaDomNodeCreated = false;
-/**
- * Create ARIA dom node inside parent,
- * or only for the first editor instantiation inside document.body.
- * @param parent container element for ARIA dom node
- */
-function createAriaDomNode(parent: HTMLElement | undefined) {
-	if (!parent) {
-		if (ariaDomNodeCreated) {
-			return;
-		}
-		ariaDomNodeCreated = true;
+function createAriaDomNode() {
+	if (ariaDomNodeCreated) {
+		return;
 	}
-	aria.setARIAContainer(parent || document.body);
+	ariaDomNodeCreated = true;
+	aria.setARIAContainer(document.body);
 }
 
 /**
@@ -283,7 +271,8 @@ export class StandaloneCodeEditor extends CodeEditorWidget implements IStandalon
 			this._standaloneKeybindingService = null;
 		}
 
-		createAriaDomNode(options.ariaContainerElement);
+		// Create the ARIA dom node as soon as the first editor is instantiated
+		createAriaDomNode();
 	}
 
 	public addCommand(keybinding: number, handler: ICommandHandler, context?: string): string | null {
@@ -493,7 +482,7 @@ export class StandaloneDiffEditor extends DiffEditorWidget implements IStandalon
 
 	constructor(
 		domElement: HTMLElement,
-		_options: Readonly<IStandaloneDiffEditorConstructionOptions> | undefined,
+		_options: Readonly<IDiffEditorConstructionOptions> | undefined,
 		toDispose: IDisposable,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IContextKeyService contextKeyService: IContextKeyService,

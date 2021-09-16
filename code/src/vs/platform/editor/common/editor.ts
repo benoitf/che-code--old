@@ -34,7 +34,7 @@ export interface IEditorModel {
 	dispose(): void;
 }
 
-export interface IBaseUntypedEditorInput {
+export interface IBaseResourceEditorInput {
 
 	/**
 	 * Optional options to use when opening the input.
@@ -50,9 +50,15 @@ export interface IBaseUntypedEditorInput {
 	 * Description to show for the input.
 	 */
 	readonly description?: string;
-}
 
-export interface IBaseResourceEditorInput extends IBaseUntypedEditorInput {
+	/**
+	 * Hint to indicate that this input should be treated as a file
+	 * that opens in an editor capable of showing file content.
+	 *
+	 * Without this hint, the editor service will make a guess by
+	 * looking at the scheme of the resource(s).
+	 */
+	readonly forceFile?: boolean;
 
 	/**
 	 * Hint to indicate that this input should be treated as a
@@ -60,10 +66,6 @@ export interface IBaseResourceEditorInput extends IBaseUntypedEditorInput {
 	 *
 	 * Without this hint, the editor service will make a guess by
 	 * looking at the scheme of the resource(s).
-	 *
-	 * Use `forceUntitled: true` when you pass in a `resource` that
-	 * does not use the `untitled` scheme. The `resource` will then
-	 * be used as associated path when saving the untitled file.
 	 */
 	readonly forceUntitled?: boolean;
 }
@@ -286,12 +288,6 @@ export interface IEditorOptions {
 	 * not as a modal dialog.
 	 */
 	context?: EditorOpenContext;
-
-	/**
-	 * An optional property to signal that certain view state should be
-	 * applied when opening the editor. 
-	 */
-	viewState?: object;
 }
 
 export interface ITextEditorSelection {
@@ -330,6 +326,11 @@ export interface ITextEditorOptions extends IEditorOptions {
 	 * Text editor selection.
 	 */
 	selection?: ITextEditorSelection;
+
+	/**
+	 * Text editor view state.
+	 */
+	viewState?: object;
 
 	/**
 	 * Option to control the text editor selection reveal type.

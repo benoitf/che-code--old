@@ -271,4 +271,6 @@ export function startClient(context: ExtensionContext, newLanguageClient: Langua
 		}
 	}
 
+
+	toDispose.push();
 }

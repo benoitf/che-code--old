@@ -218,27 +218,11 @@ const webBuiltInExtensions = productJson.webBuiltInExtensions || [];
  * Loosely based on `getExtensionKind` from `src/vs/workbench/services/extensions/common/extensionManifestPropertiesService.ts`
  */
 function isWebExtension(manifest) {
-    if (Boolean(manifest.browser)) {
-        return true;
-    }
-    if (Boolean(manifest.main)) {
-        return false;
-    }
-    // neither browser nor main
     if (typeof manifest.extensionKind !== 'undefined') {
         const extensionKind = Array.isArray(manifest.extensionKind) ? manifest.extensionKind : [manifest.extensionKind];
-        if (extensionKind.indexOf('web') >= 0) {
-            return true;
-        }
+        return (extensionKind.indexOf('web') >= 0);
     }
-    if (typeof manifest.contributes !== 'undefined') {
-        for (const id of ['debuggers', 'terminal', 'typescriptServerPlugins']) {
-            if (manifest.contributes.hasOwnProperty(id)) {
-                return false;
-            }
-        }
-    }
-    return true;
+    return (!Boolean(manifest.main) || Boolean(manifest.browser));
 }
 function packageLocalExtensionsStream(forWeb) {
     const localExtensionsDescriptions = (glob.sync('extensions/*/package.json')

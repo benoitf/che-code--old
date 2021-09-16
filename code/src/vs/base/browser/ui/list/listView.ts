@@ -389,24 +389,12 @@ export class ListView<T> implements ISpliceable<T>, IDisposable {
 		this.scrollableElement.triggerScrollFromMouseWheelEvent(browserEvent);
 	}
 
-	updateElementHeight(index: number, size: number | undefined, anchorIndex: number | null): void {
+	updateElementHeight(index: number, size: number, anchorIndex: number | null): void {
 		if (index < 0 || index >= this.items.length) {
 			return;
 		}
 
-		const originalSize = this.items[index].size;
-
-		if (typeof size === 'undefined') {
-			if (!this.supportDynamicHeights) {
-				console.warn('Dynamic heights not supported');
-				return;
-			}
-
-			this.items[index].lastDynamicHeightWidth = undefined;
-			size = originalSize + this.probeDynamicHeight(index);
-		}
-
-		if (originalSize === size) {
+		if (this.items[index].size === size) {
 			return;
 		}
 
@@ -416,12 +404,12 @@ export class ListView<T> implements ISpliceable<T>, IDisposable {
 
 		if (index < lastRenderRange.start) {
 			// do not scroll the viewport if resized element is out of viewport
-			heightDiff = size - originalSize;
+			heightDiff = size - this.items[index].size;
 		} else {
 			if (anchorIndex !== null && anchorIndex > index && anchorIndex <= lastRenderRange.end) {
 				// anchor in viewport
 				// resized element in viewport and above the anchor
-				heightDiff = size - originalSize;
+				heightDiff = size - this.items[index].size;
 			} else {
 				heightDiff = 0;
 			}
@@ -840,7 +828,6 @@ export class ListView<T> implements ISpliceable<T>, IDisposable {
 
 		item.row!.domNode.setAttribute('data-index', `${index}`);
 		item.row!.domNode.setAttribute('data-last-element', index === this.length - 1 ? 'true' : 'false');
-		item.row!.domNode.setAttribute('data-parity', index % 2 === 0 ? 'even' : 'odd');
 		item.row!.domNode.setAttribute('aria-setsize', String(this.accessibilityProvider.getSetSize(item.element, index, this.length)));
 		item.row!.domNode.setAttribute('aria-posinset', String(this.accessibilityProvider.getPosInSet(item.element, index)));
 		item.row!.domNode.setAttribute('id', this.getElementDomId(index));

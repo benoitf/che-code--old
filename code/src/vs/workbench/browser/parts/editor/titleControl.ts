@@ -30,15 +30,13 @@ import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { BreadcrumbsConfig } from 'vs/workbench/browser/parts/editor/breadcrumbs';
 import { BreadcrumbsControl, IBreadcrumbsControlOptions } from 'vs/workbench/browser/parts/editor/breadcrumbsControl';
 import { IEditorGroupsAccessor, IEditorGroupTitleHeight, IEditorGroupView } from 'vs/workbench/browser/parts/editor/editor';
-import { IEditorCommandsContext, EditorResourceAccessor, IEditorPartOptions, SideBySideEditor, ActiveEditorPinnedContext, ActiveEditorStickyContext, EditorsOrder, ActiveEditorGroupLockedContext, ActiveEditorCanSplitInGroupContext, EditorInputCapabilities, SideBySideEditorActiveContext } from 'vs/workbench/common/editor';
-import { EditorInput } from 'vs/workbench/common/editor/editorInput';
+import { IEditorCommandsContext, IEditorInput, EditorResourceAccessor, IEditorPartOptions, SideBySideEditor, ActiveEditorPinnedContext, ActiveEditorStickyContext, EditorsOrder, ActiveEditorGroupLockedContext } from 'vs/workbench/common/editor';
 import { ResourceContextKey } from 'vs/workbench/common/resources';
 import { AnchorAlignment } from 'vs/base/browser/ui/contextview/contextview';
 import { IFileService } from 'vs/platform/files/common/files';
 import { withNullAsUndefined, withUndefinedAsNull, assertIsDefined } from 'vs/base/common/types';
 import { isFirefox } from 'vs/base/browser/browser';
 import { isPromiseCanceledError } from 'vs/base/common/errors';
-import { SideBySideEditorInput } from 'vs/workbench/common/editor/sideBySideEditorInput';
 
 export interface IToolbarActions {
 	primary: IAction[];
@@ -86,9 +84,6 @@ export abstract class TitleControl extends Themable {
 	private editorPinnedContext: IContextKey<boolean>;
 	private editorStickyContext: IContextKey<boolean>;
 
-	private editorCanSplitInGroupContext: IContextKey<boolean>;
-	private sideBySideEditorContext: IContextKey<boolean>;
-
 	private groupLockedContext: IContextKey<boolean>;
 
 	private readonly editorToolBarMenuDisposables = this._register(new DisposableStore());
@@ -118,9 +113,6 @@ export abstract class TitleControl extends Themable {
 
 		this.editorPinnedContext = ActiveEditorPinnedContext.bindTo(contextKeyService);
 		this.editorStickyContext = ActiveEditorStickyContext.bindTo(contextKeyService);
-
-		this.editorCanSplitInGroupContext = ActiveEditorCanSplitInGroupContext.bindTo(contextKeyService);
-		this.sideBySideEditorContext = SideBySideEditorActiveContext.bindTo(contextKeyService);
 
 		this.groupLockedContext = ActiveEditorGroupLockedContext.bindTo(contextKeyService);
 
@@ -163,7 +155,6 @@ export abstract class TitleControl extends Themable {
 	protected createEditorActionsToolBar(container: HTMLElement): void {
 		const context: IEditorCommandsContext = { groupId: this.group.id };
 
-		// Toolbar Widget
 		this.editorActionsToolbar = this._register(new ToolBar(container, this.contextMenuService, {
 			actionViewItemProvider: action => this.actionViewItemProvider(action),
 			orientation: ActionsOrientation.HORIZONTAL,
@@ -228,9 +219,6 @@ export abstract class TitleControl extends Themable {
 
 			this.editorPinnedContext.set(this.group.activeEditor ? this.group.isPinned(this.group.activeEditor) : false);
 			this.editorStickyContext.set(this.group.activeEditor ? this.group.isSticky(this.group.activeEditor) : false);
-
-			this.editorCanSplitInGroupContext.set(this.group.activeEditor ? this.group.activeEditor.hasCapability(EditorInputCapabilities.CanSplitInGroup) : false);
-			this.sideBySideEditorContext.set(this.group.activeEditor?.typeId === SideBySideEditorInput.ID);
 
 			this.groupLockedContext.set(this.group.isLocked);
 		});
@@ -313,7 +301,7 @@ export abstract class TitleControl extends Themable {
 		}));
 	}
 
-	protected doFillResourceDataTransfers(editors: readonly EditorInput[], e: DragEvent): boolean {
+	protected doFillResourceDataTransfers(editors: readonly IEditorInput[], e: DragEvent): boolean {
 		if (editors.length) {
 			this.instantiationService.invokeFunction(fillEditorsDragData, editors.map(editor => ({ editor, groupId: this.group.id })), e);
 
@@ -323,7 +311,7 @@ export abstract class TitleControl extends Themable {
 		return false;
 	}
 
-	protected onContextMenu(editor: EditorInput, e: Event, node: HTMLElement): void {
+	protected onContextMenu(editor: IEditorInput, e: Event, node: HTMLElement): void {
 
 		// Update contexts based on editor picked and remember previous to restore
 		const currentResourceContext = this.resourceContext.get();
@@ -334,10 +322,6 @@ export abstract class TitleControl extends Themable {
 		this.editorStickyContext.set(this.group.isSticky(editor));
 		const currentGroupLockedContext = !!this.groupLockedContext.get();
 		this.groupLockedContext.set(this.group.isLocked);
-		const currentEditorCanSplitContext = !!this.editorCanSplitInGroupContext.get();
-		this.editorCanSplitInGroupContext.set(editor.hasCapability(EditorInputCapabilities.CanSplitInGroup));
-		const currentSideBySideEditorContext = !!this.sideBySideEditorContext.get();
-		this.sideBySideEditorContext.set(editor.typeId === SideBySideEditorInput.ID);
 
 		// Find target anchor
 		let anchor: HTMLElement | { x: number, y: number } = node;
@@ -363,8 +347,6 @@ export abstract class TitleControl extends Themable {
 				this.editorPinnedContext.set(currentPinnedContext);
 				this.editorStickyContext.set(currentStickyContext);
 				this.groupLockedContext.set(currentGroupLockedContext);
-				this.editorCanSplitInGroupContext.set(currentEditorCanSplitContext);
-				this.sideBySideEditorContext.set(currentSideBySideEditorContext);
 
 				// restore focus to active group
 				this.accessor.activeGroup.focus();
@@ -385,29 +367,31 @@ export abstract class TitleControl extends Themable {
 		return keybinding ? withNullAsUndefined(keybinding.getLabel()) : undefined;
 	}
 
-	abstract openEditor(editor: EditorInput): void;
+	abstract openEditor(editor: IEditorInput): void;
 
-	abstract openEditors(editors: EditorInput[]): void;
+	abstract openEditors(editors: IEditorInput[]): void;
 
-	abstract closeEditor(editor: EditorInput, index: number | undefined): void;
+	abstract closeEditor(editor: IEditorInput): void;
 
-	abstract closeEditors(editors: EditorInput[]): void;
+	abstract closeEditors(editors: IEditorInput[]): void;
 
-	abstract moveEditor(editor: EditorInput, fromIndex: number, targetIndex: number): void;
+	abstract moveEditor(editor: IEditorInput, fromIndex: number, targetIndex: number): void;
 
-	abstract pinEditor(editor: EditorInput): void;
+	abstract pinEditor(editor: IEditorInput): void;
 
-	abstract stickEditor(editor: EditorInput): void;
+	abstract stickEditor(editor: IEditorInput): void;
 
-	abstract unstickEditor(editor: EditorInput): void;
+	abstract unstickEditor(editor: IEditorInput): void;
 
 	abstract setActive(isActive: boolean): void;
 
-	abstract updateEditorLabel(editor: EditorInput): void;
+	abstract updateEditorLabel(editor: IEditorInput): void;
 
-	abstract updateEditorCapabilities(editor: EditorInput): void;
+	abstract updateEditorCapabilities(editor: IEditorInput): void;
 
-	abstract updateEditorDirty(editor: EditorInput): void;
+	abstract updateEditorLabels(): void;
+
+	abstract updateEditorDirty(editor: IEditorInput): void;
 
 	abstract updateOptions(oldOptions: IEditorPartOptions, newOptions: IEditorPartOptions): void;
 

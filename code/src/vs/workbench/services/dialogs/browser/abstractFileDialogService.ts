@@ -27,8 +27,6 @@ import { IPathService } from 'vs/workbench/services/path/common/pathService';
 import { Schemas } from 'vs/base/common/network';
 import { PLAINTEXT_EXTENSION } from 'vs/editor/common/modes/modesRegistry';
 import { ICommandService } from 'vs/platform/commands/common/commands';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export abstract class AbstractFileDialogService implements IFileDialogService {
 
@@ -48,9 +46,7 @@ export abstract class AbstractFileDialogService implements IFileDialogService {
 		@IWorkspacesService private readonly workspacesService: IWorkspacesService,
 		@ILabelService private readonly labelService: ILabelService,
 		@IPathService private readonly pathService: IPathService,
-		@ICommandService protected readonly commandService: ICommandService,
-		@IEditorService protected readonly editorService: IEditorService,
-		@ICodeEditorService protected readonly codeEditorService: ICodeEditorService
+		@ICommandService protected readonly commandService: ICommandService
 	) { }
 
 	async defaultFilePath(schemeFilter = this.getSchemeFilterForWindow()): Promise<URI> {
@@ -212,7 +208,7 @@ export abstract class AbstractFileDialogService implements IFileDialogService {
 	}
 
 	protected async pickWorkspaceAndOpenSimplified(schema: string, options: IPickAndOpenOptions): Promise<void> {
-		const title = nls.localize('openWorkspace.title', 'Open Workspace from File');
+		const title = nls.localize('openWorkspace.title', 'Open Workspace');
 		const filters: FileFilter[] = [{ name: nls.localize('filterName.workspace', 'Workspace'), extensions: [WORKSPACE_EXTENSION] }];
 		const availableFileSystems = this.addFileSchemaIfNeeded(schema, true);
 

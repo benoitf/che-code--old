@@ -4,8 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/notabstitlecontrol';
-import { EditorResourceAccessor, Verbosity, IEditorPartOptions, SideBySideEditor } from 'vs/workbench/common/editor';
-import { EditorInput } from 'vs/workbench/common/editor/editorInput';
+import { EditorResourceAccessor, Verbosity, IEditorInput, IEditorPartOptions, SideBySideEditor } from 'vs/workbench/common/editor';
 import { TitleControl, IToolbarActions, ITitleControlDimensions } from 'vs/workbench/browser/parts/editor/titleControl';
 import { ResourceLabel, IResourceLabel } from 'vs/workbench/browser/labels';
 import { TAB_ACTIVE_FOREGROUND, TAB_UNFOCUSED_ACTIVE_FOREGROUND } from 'vs/workbench/common/theme';
@@ -19,7 +18,7 @@ import { equals } from 'vs/base/common/objects';
 import { toDisposable } from 'vs/base/common/lifecycle';
 
 interface IRenderedEditorLabel {
-	editor?: EditorInput;
+	editor?: IEditorInput;
 	pinned: boolean;
 }
 
@@ -78,13 +77,16 @@ export class NoTabsTitleControl extends TitleControl {
 		this._register(addDisposableListener(titleContainer, TouchEventType.Tap, (e: GestureEvent) => this.onTitleTap(e)));
 
 		// Context Menu
-		[EventType.CONTEXT_MENU, TouchEventType.Contextmenu].forEach(event => {
-			this._register(addDisposableListener(titleContainer, event, e => {
-				if (this.group.activeEditor) {
-					this.onContextMenu(this.group.activeEditor, e, titleContainer);
-				}
-			}));
-		});
+		this._register(addDisposableListener(titleContainer, EventType.CONTEXT_MENU, e => {
+			if (this.group.activeEditor) {
+				this.onContextMenu(this.group.activeEditor, e, titleContainer);
+			}
+		}));
+		this._register(addDisposableListener(titleContainer, TouchEventType.Contextmenu, (e: Event) => {
+			if (this.group.activeEditor) {
+				this.onContextMenu(this.group.activeEditor, e, titleContainer);
+			}
+		}));
 	}
 
 	private onTitleLabelClick(e: MouseEvent): void {
@@ -120,18 +122,16 @@ export class NoTabsTitleControl extends TitleControl {
 		}
 
 		// TODO@rebornix gesture tap should open the quick access
-		// editorGroupView will focus on the editor again when there
-		// are mouse/pointer/touch down events we need to wait a bit as
-		// `GesureEvent.Tap` is generated from `touchstart` and then
-		// `touchend` events, which are not an atom event.
+		// editorGroupView will focus on the editor again when there are mouse/pointer/touch down events
+		// we need to wait a bit as `GesureEvent.Tap` is generated from `touchstart` and then `touchend` evnets, which are not an atom event.
 		setTimeout(() => this.quickInputService.quickAccess.show(), 50);
 	}
 
-	openEditor(editor: EditorInput): void {
+	openEditor(editor: IEditorInput): void {
 		this.doHandleOpenEditor();
 	}
 
-	openEditors(editors: EditorInput[]): void {
+	openEditors(editors: IEditorInput[]): void {
 		this.doHandleOpenEditor();
 	}
 
@@ -142,27 +142,27 @@ export class NoTabsTitleControl extends TitleControl {
 		}
 	}
 
-	closeEditor(editor: EditorInput, index: number | undefined): void {
+	closeEditor(editor: IEditorInput): void {
 		this.ifActiveEditorChanged(() => this.redraw());
 	}
 
-	closeEditors(editors: EditorInput[]): void {
+	closeEditors(editors: IEditorInput[]): void {
 		this.ifActiveEditorChanged(() => this.redraw());
 	}
 
-	moveEditor(editor: EditorInput, fromIndex: number, targetIndex: number): void {
+	moveEditor(editor: IEditorInput, fromIndex: number, targetIndex: number): void {
 		this.ifActiveEditorChanged(() => this.redraw());
 	}
 
-	pinEditor(editor: EditorInput): void {
+	pinEditor(editor: IEditorInput): void {
 		this.ifEditorIsActive(editor, () => this.redraw());
 	}
 
-	stickEditor(editor: EditorInput): void {
+	stickEditor(editor: IEditorInput): void {
 		// Sticky editors are not presented any different with tabs disabled
 	}
 
-	unstickEditor(editor: EditorInput): void {
+	unstickEditor(editor: IEditorInput): void {
 		// Sticky editors are not presented any different with tabs disabled
 	}
 
@@ -170,15 +170,21 @@ export class NoTabsTitleControl extends TitleControl {
 		this.redraw();
 	}
 
-	updateEditorLabel(editor: EditorInput): void {
+	updateEditorLabel(editor: IEditorInput): void {
 		this.ifEditorIsActive(editor, () => this.redraw());
 	}
 
-	updateEditorCapabilities(editor: EditorInput): void {
+	updateEditorCapabilities(editor: IEditorInput): void {
 		this.ifEditorIsActive(editor, () => this.redraw());
 	}
 
-	updateEditorDirty(editor: EditorInput): void {
+	updateEditorLabels(): void {
+		if (this.group.activeEditor) {
+			this.updateEditorLabel(this.group.activeEditor); // we only have the active one to update
+		}
+	}
+
+	updateEditorDirty(editor: IEditorInput): void {
 		this.ifEditorIsActive(editor, () => {
 			const titleContainer = assertIsDefined(this.titleContainer);
 
@@ -213,9 +219,9 @@ export class NoTabsTitleControl extends TitleControl {
 
 	private ifActiveEditorChanged(fn: () => void): boolean {
 		if (
-			!this.activeLabel.editor && this.group.activeEditor || 						// active editor changed from null => editor
-			this.activeLabel.editor && !this.group.activeEditor || 						// active editor changed from editor => null
-			(!this.activeLabel.editor || !this.group.isActive(this.activeLabel.editor))	// active editor changed from editorA => editorB
+			!this.activeLabel.editor && this.group.activeEditor || 	// active editor changed from null => editor
+			this.activeLabel.editor && !this.group.activeEditor || 	// active editor changed from editor => null
+			(!this.activeLabel.editor || !this.group.isActive(this.activeLabel.editor))			// active editor changed from editorA => editorB
 		) {
 			fn();
 
@@ -235,7 +241,7 @@ export class NoTabsTitleControl extends TitleControl {
 		}
 	}
 
-	private ifEditorIsActive(editor: EditorInput, fn: () => void): void {
+	private ifEditorIsActive(editor: IEditorInput, fn: () => void): void {
 		if (this.group.isActive(editor)) {
 			fn();  // only run if editor is current active
 		}

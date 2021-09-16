@@ -203,7 +203,9 @@ export class Workbench extends Layout {
 			// TODO@Sandeep debt around cyclic dependencies
 			const configurationService = accessor.get(IConfigurationService) as any;
 			if (typeof configurationService.acquireInstantiationService === 'function') {
-				configurationService.acquireInstantiationService(instantiationService);
+				setTimeout(() => {
+					configurationService.acquireInstantiationService(instantiationService);
+				}, 0);
 			}
 
 			// Signal to lifecycle that services are set

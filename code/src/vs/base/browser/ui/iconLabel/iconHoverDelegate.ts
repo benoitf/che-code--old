@@ -20,11 +20,7 @@ export interface IHoverDelegateOptions {
 }
 
 export interface IHoverDelegate {
-	showHover(options: IHoverDelegateOptions): IHoverWidget | undefined;
+	showHover(options: IHoverDelegateOptions): IDisposable | undefined;
 	delay: number;
 	placement?: 'mouse' | 'element';
-}
-
-export interface IHoverWidget extends IDisposable {
-	readonly isDisposed: boolean;
 }

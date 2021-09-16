@@ -36,7 +36,6 @@ import { filterExceptionsFromTelemetry } from 'vs/workbench/contrib/debug/common
 import { DebugCompoundRoot } from 'vs/workbench/contrib/debug/common/debugCompoundRoot';
 import { IUriIdentityService } from 'vs/workbench/services/uriIdentity/common/uriIdentity';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IWorkbenchEnvironmentService } from 'vs/workbench/services/environment/common/environmentService';
 
 export class DebugSession implements IDebugSession {
 
@@ -88,7 +87,6 @@ export class DebugSession implements IDebugSession {
 		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ICustomEndpointTelemetryService private readonly customEndpointTelemetryService: ICustomEndpointTelemetryService,
-		@IWorkbenchEnvironmentService private readonly workbenchEnvironmentService: IWorkbenchEnvironmentService,
 	) {
 		this._options = options || {};
 		if (this.hasSeparateRepl()) {
@@ -933,7 +931,7 @@ export class DebugSession implements IDebugSession {
 								await this.viewletService.openViewlet(VIEWLET_ID);
 							}
 
-							if (this.configurationService.getValue<IDebugConfiguration>('debug').focusWindowOnBreak && !this.workbenchEnvironmentService.extensionTestsLocationURI) {
+							if (this.configurationService.getValue<IDebugConfiguration>('debug').focusWindowOnBreak) {
 								await this.hostService.focus({ force: true /* Application may not be active */ });
 							}
 						}

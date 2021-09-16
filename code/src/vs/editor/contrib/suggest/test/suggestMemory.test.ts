@@ -4,12 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
-import { IPosition } from 'vs/editor/common/core/position';
+import { LRUMemory, NoMemory, PrefixMemory, Memory } from 'vs/editor/contrib/suggest/suggestMemory';
 import { ITextModel } from 'vs/editor/common/model';
-import { CompletionItem } from 'vs/editor/contrib/suggest/suggest';
-import { LRUMemory, Memory, NoMemory, PrefixMemory } from 'vs/editor/contrib/suggest/suggestMemory';
-import { createSuggestItem } from 'vs/editor/contrib/suggest/test/completionModel.test';
 import { createTextModel } from 'vs/editor/test/common/editorTestUtils';
+import { createSuggestItem } from 'vs/editor/contrib/suggest/test/completionModel.test';
+import { IPosition } from 'vs/editor/common/core/position';
+import { CompletionItem } from 'vs/editor/contrib/suggest/suggest';
 
 suite('SuggestMemories', function () {
 

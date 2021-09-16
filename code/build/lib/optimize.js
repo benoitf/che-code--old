@@ -35,7 +35,7 @@ function loaderConfig() {
 }
 exports.loaderConfig = loaderConfig;
 const IS_OUR_COPYRIGHT_REGEXP = /Copyright \(C\) Microsoft Corporation/i;
-function loader(src, bundledFileHeader, bundleLoader, externalLoaderInfo) {
+function loader(src, bundledFileHeader, bundleLoader) {
     let sources = [
         `${src}/vs/loader.js`
     ];
@@ -61,15 +61,6 @@ function loader(src, bundledFileHeader, bundleLoader, externalLoaderInfo) {
         else {
             this.emit('data', data);
         }
-    }, function () {
-        if (externalLoaderInfo !== undefined) {
-            this.emit('data', new VinylFile({
-                path: 'fake2',
-                base: '.',
-                contents: Buffer.from(`require.config(${JSON.stringify(externalLoaderInfo, undefined, 2)});`)
-            }));
-        }
-        this.emit('end');
     }))
         .pipe(concat('vs/loader.js')));
 }

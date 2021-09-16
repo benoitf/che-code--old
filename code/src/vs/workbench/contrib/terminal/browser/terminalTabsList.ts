@@ -289,12 +289,11 @@ class TerminalTabsRenderer implements IListRenderer<ITerminalInstance, ITerminal
 			}
 		}
 
-
-		let statusString = '';
+		let title = instance.title;
 		const statuses = instance.statusList.statuses;
 		template.context.hoverActions = [];
 		for (const status of statuses) {
-			statusString += `\n\n---\n\n${status.icon ? `$(${status.icon?.id}) ` : ''}${status.tooltip || status.id}`;
+			title += `\n\n---\n\n${status.icon ? `$(${status.icon?.id}) ` : ''}${status.tooltip || status.id}`;
 			if (status.hoverActions) {
 				template.context.hoverActions.push(...status.hoverActions);
 			}
@@ -349,14 +348,14 @@ class TerminalTabsRenderer implements IListRenderer<ITerminalInstance, ITerminal
 		template.label.setResource({
 			resource: instance.resource,
 			name: label,
-			description: hasText ? instance.description : undefined
+			description: hasText ? instance.shellLaunchConfig.description : undefined
 		}, {
 			fileDecorations: {
 				colors: true,
 				badges: hasText
 			},
 			title: {
-				markdown: new MarkdownString(instance.title + statusString, { supportThemeIcons: true }),
+				markdown: new MarkdownString(title, { supportThemeIcons: true }),
 				markdownNotSupportedFallback: undefined
 			},
 			extraClasses

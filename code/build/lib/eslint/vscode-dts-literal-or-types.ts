@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as eslint from 'eslint';
-import { TSESTree } from '@typescript-eslint/experimental-utils';
 
 export = new class ApiLiteralOrTypes implements eslint.Rule.RuleModule {
 
@@ -15,13 +14,14 @@ export = new class ApiLiteralOrTypes implements eslint.Rule.RuleModule {
 
 	create(context: eslint.Rule.RuleContext): eslint.Rule.RuleListener {
 		return {
-			['TSTypeAnnotation TSUnionType']: (node: any) => {
-				if ((<TSESTree.TSUnionType>node).types.every(value => value.type === 'TSLiteralType')) {
-					context.report({
-						node: node,
-						messageId: 'useEnum'
-					});
+			['TSTypeAnnotation TSUnionType TSLiteralType']: (node: any) => {
+				if (node.literal?.type === 'TSNullKeyword') {
+					return;
 				}
+				context.report({
+					node: node,
+					messageId: 'useEnum'
+				});
 			}
 		};
 	}

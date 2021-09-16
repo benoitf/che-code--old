@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IChannel } from 'vs/base/parts/ipc/common/ipc';
-import { IExtensionManagementService, ILocalExtension, IGalleryExtension, IExtensionGalleryService, InstallOperation, InstallOptions, InstallVSIXOptions } from 'vs/platform/extensionManagement/common/extensionManagement';
+import { IExtensionManagementService, ILocalExtension, IGalleryExtension, IExtensionGalleryService, InstallOperation, InstallOptions, InstallVSIXOptions, getTargetPlatformFromOS } from 'vs/platform/extensionManagement/common/extensionManagement';
 import { URI } from 'vs/base/common/uri';
 import { ExtensionType, IExtensionManifest } from 'vs/platform/extensions/common/extensions';
 import { areSameExtensions } from 'vs/platform/extensionManagement/common/extensionManagementUtil';
@@ -17,25 +17,27 @@ import { IProductService } from 'vs/platform/product/common/productService';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { generateUuid } from 'vs/base/common/uuid';
 import { joinPath } from 'vs/base/common/resources';
+import { WebRemoteExtensionManagementService } from 'vs/workbench/services/extensionManagement/common/remoteExtensionManagementService';
 import { IExtensionManagementServer } from 'vs/workbench/services/extensionManagement/common/extensionManagement';
 import { INativeWorkbenchEnvironmentService } from 'vs/workbench/services/environment/electron-sandbox/environmentService';
 import { Promises } from 'vs/base/common/async';
 import { IExtensionManifestPropertiesService } from 'vs/workbench/services/extensions/common/extensionManifestPropertiesService';
-import { ExtensionManagementChannelClient } from 'vs/platform/extensionManagement/common/extensionManagementIpc';
+import { IRemoteAgentService } from 'vs/workbench/services/remote/common/remoteAgentService';
 
-export class NativeRemoteExtensionManagementService extends ExtensionManagementChannelClient implements IExtensionManagementService {
+export class NativeRemoteExtensionManagementService extends WebRemoteExtensionManagementService implements IExtensionManagementService {
 
 	constructor(
 		channel: IChannel,
 		private readonly localExtensionManagementServer: IExtensionManagementServer,
 		@ILogService private readonly logService: ILogService,
-		@IExtensionGalleryService private readonly galleryService: IExtensionGalleryService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IProductService private readonly productService: IProductService,
+		@IExtensionGalleryService galleryService: IExtensionGalleryService,
+		@IConfigurationService configurationService: IConfigurationService,
+		@IProductService productService: IProductService,
 		@INativeWorkbenchEnvironmentService private readonly environmentService: INativeWorkbenchEnvironmentService,
-		@IExtensionManifestPropertiesService private readonly extensionManifestPropertiesService: IExtensionManifestPropertiesService,
+		@IExtensionManifestPropertiesService extensionManifestPropertiesService: IExtensionManifestPropertiesService,
+		@IRemoteAgentService private readonly remoteAgentService: IRemoteAgentService,
 	) {
-		super(channel);
+		super(channel, galleryService, configurationService, productService, extensionManifestPropertiesService);
 	}
 
 	override async install(vsix: URI, options?: InstallVSIXOptions): Promise<ILocalExtension> {
@@ -82,7 +84,11 @@ export class NativeRemoteExtensionManagementService extends ExtensionManagementC
 	}
 
 	private async downloadCompatibleAndInstall(extension: IGalleryExtension, installed: ILocalExtension[], installOptions: InstallOptions): Promise<ILocalExtension> {
-		const compatible = await this.galleryService.getCompatibleExtension(extension, await this.getTargetPlatform());
+		const remoteEnvironment = await this.remoteAgentService.getEnvironment();
+		if (!remoteEnvironment) {
+			return Promise.reject(new Error('Cannot get the remote environment'));
+		}
+		const compatible = await this.galleryService.getCompatibleExtension(extension, getTargetPlatformFromOS(remoteEnvironment.os, remoteEnvironment.arch));
 		if (!compatible) {
 			return Promise.reject(new Error(localize('incompatible', "Unable to install extension '{0}' as it is not compatible with VS Code '{1}'.", extension.identifier.id, this.productService.version)));
 		}

@@ -302,15 +302,8 @@ export abstract class PickerQuickAccessProvider<T extends IPickerQuickAccessItem
 							const index = picker.items.indexOf(item);
 							if (index !== -1) {
 								const items = picker.items.slice();
-								const removed = items.splice(index, 1);
-								const activeItems = picker.activeItems.filter(activeItem => activeItem !== removed[0]);
-								const keepScrollPositionBefore = picker.keepScrollPosition;
-								picker.keepScrollPosition = true;
+								items.splice(index, 1);
 								picker.items = items;
-								if (activeItems) {
-									picker.activeItems = activeItems;
-								}
-								picker.keepScrollPosition = keepScrollPositionBefore;
 							}
 							break;
 					}

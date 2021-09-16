@@ -81,6 +81,10 @@ export class EditorWorkerServiceImpl extends Disposable implements IEditorWorker
 		super.dispose();
 	}
 
+	public canComputeDiff(original: URI, modified: URI): boolean {
+		return (canSyncModel(this._modelService, original) && canSyncModel(this._modelService, modified));
+	}
+
 	public computeDiff(original: URI, modified: URI, ignoreTrimWhitespace: boolean, maxComputationTime: number): Promise<IDiffComputationResult | null> {
 		return this._workerManager.withWorker().then(client => client.computeDiff(original, modified, ignoreTrimWhitespace, maxComputationTime));
 	}
@@ -297,12 +301,12 @@ class EditorModelManager extends Disposable {
 		super.dispose();
 	}
 
-	public ensureSyncedResources(resources: URI[], forceLargeModels: boolean): void {
+	public ensureSyncedResources(resources: URI[]): void {
 		for (const resource of resources) {
 			let resourceStr = resource.toString();
 
 			if (!this._syncedModels[resourceStr]) {
-				this._beginModelSync(resource, forceLargeModels);
+				this._beginModelSync(resource);
 			}
 			if (this._syncedModels[resourceStr]) {
 				this._syncedModelsLastUsedTime[resourceStr] = (new Date()).getTime();
@@ -326,12 +330,12 @@ class EditorModelManager extends Disposable {
 		}
 	}
 
-	private _beginModelSync(resource: URI, forceLargeModels: boolean): void {
+	private _beginModelSync(resource: URI): void {
 		let model = this._modelService.getModel(resource);
 		if (!model) {
 			return;
 		}
-		if (!forceLargeModels && model.isTooLargeForSyncing()) {
+		if (model.isTooLargeForSyncing()) {
 			return;
 		}
 
@@ -456,18 +460,18 @@ export class EditorWorkerClient extends Disposable implements IEditorWorkerClien
 		return this._modelManager;
 	}
 
-	protected async _withSyncedResources(resources: URI[], forceLargeModels: boolean = false): Promise<EditorSimpleWorker> {
+	protected _withSyncedResources(resources: URI[]): Promise<EditorSimpleWorker> {
 		if (this._disposed) {
 			return Promise.reject(canceled());
 		}
 		return this._getProxy().then((proxy) => {
-			this._getOrCreateModelManager(proxy).ensureSyncedResources(resources, forceLargeModels);
+			this._getOrCreateModelManager(proxy).ensureSyncedResources(resources);
 			return proxy;
 		});
 	}
 
 	public computeDiff(original: URI, modified: URI, ignoreTrimWhitespace: boolean, maxComputationTime: number): Promise<IDiffComputationResult | null> {
-		return this._withSyncedResources([original, modified], /* forceLargeModels */true).then(proxy => {
+		return this._withSyncedResources([original, modified]).then(proxy => {
 			return proxy.computeDiff(original.toString(), modified.toString(), ignoreTrimWhitespace, maxComputationTime);
 		});
 	}

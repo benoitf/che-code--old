@@ -5,12 +5,11 @@
 
 import { localize } from 'vs/nls';
 import { deepClone } from 'vs/base/common/objects';
-import { isObject, isArray, assertIsDefined, withUndefinedAsNull, withNullAsUndefined } from 'vs/base/common/types';
-import { IDiffEditor, isDiffEditor } from 'vs/editor/browser/editorBrowser';
+import { isObject, isArray, assertIsDefined, withUndefinedAsNull } from 'vs/base/common/types';
+import { IDiffEditor } from 'vs/editor/browser/editorBrowser';
 import { IDiffEditorOptions, IEditorOptions as ICodeEditorOptions } from 'vs/editor/common/config/editorOptions';
 import { BaseTextEditor, IEditorConfiguration } from 'vs/workbench/browser/parts/editor/textEditor';
-import { TEXT_DIFF_EDITOR_ID, IEditorFactoryRegistry, EditorExtensions, ITextDiffEditorPane, IEditorOpenContext, EditorInputCapabilities, isEditorInput } from 'vs/workbench/common/editor';
-import { EditorInput } from 'vs/workbench/common/editor/editorInput';
+import { TEXT_DIFF_EDITOR_ID, IEditorFactoryRegistry, EditorExtensions, ITextDiffEditorPane, IEditorInput, IEditorOpenContext, EditorInputCapabilities } from 'vs/workbench/common/editor';
 import { applyTextEditorOptions } from 'vs/workbench/common/editor/editorOptions';
 import { DiffEditorInput } from 'vs/workbench/common/editor/diffEditorInput';
 import { DiffNavigator } from 'vs/editor/browser/widget/diffNavigator';
@@ -27,7 +26,7 @@ import { DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { URI } from 'vs/base/common/uri';
 import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { IEditorService, ACTIVE_GROUP } from 'vs/workbench/services/editor/common/editorService';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { EditorActivation, ITextEditorOptions } from 'vs/platform/editor/common/editor';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -38,7 +37,7 @@ import { IFileService } from 'vs/platform/files/common/files';
 /**
  * The text editor that leverages the diff text editor for the editing experience.
  */
-export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> implements ITextDiffEditorPane {
+export class TextDiffEditor extends BaseTextEditor implements ITextDiffEditorPane {
 
 	static readonly ID = TEXT_DIFF_EDITOR_ID;
 
@@ -98,6 +97,14 @@ export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> impleme
 		}
 	}
 
+	protected override onWillCloseEditorInGroup(editor: IEditorInput): void {
+
+		// React to editors closing to preserve or clear view state. This needs to happen
+		// in the onWillCloseEditor because at that time the editor has not yet
+		// been disposed and we can safely persist the view state still as needed.
+		this.doSaveOrClearTextDiffEditorViewState(editor);
+	}
+
 	override getTitle(): string {
 		if (this.input) {
 			return this.input.getName();
@@ -117,6 +124,9 @@ export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> impleme
 
 		// Dispose previous diff navigator
 		this.diffNavigatorDisposables.clear();
+
+		// Update/clear view settings if input changes
+		this.doSaveOrClearTextDiffEditorViewState(this.input);
 
 		// Set input and resolve
 		await super.setInput(input, options, context, token);
@@ -148,8 +158,8 @@ export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> impleme
 
 			// Otherwise restore View State unless disabled via settings
 			let hasPreviousViewState = false;
-			if (!optionsGotApplied) {
-				hasPreviousViewState = this.restoreTextDiffEditorViewState(input, context, diffEditor);
+			if (!optionsGotApplied && this.shouldRestoreTextEditorViewState(input, context)) {
+				hasPreviousViewState = this.restoreTextDiffEditorViewState(input, diffEditor);
 			}
 
 			// Diff navigator
@@ -179,12 +189,15 @@ export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> impleme
 		}
 	}
 
-	private restoreTextDiffEditorViewState(editor: DiffEditorInput, context: IEditorOpenContext, control: IDiffEditor): boolean {
-		const viewState = this.loadEditorViewState(editor, context);
-		if (viewState) {
-			control.restoreViewState(viewState);
+	private restoreTextDiffEditorViewState(editor: DiffEditorInput, control: IDiffEditor): boolean {
+		const resource = this.toDiffEditorViewStateResource(editor);
+		if (resource) {
+			const viewState = this.loadTextEditorViewState(resource);
+			if (viewState) {
+				control.restoreViewState(viewState);
 
-			return true;
+				return true;
+			}
 		}
 
 		return false;
@@ -207,7 +220,7 @@ export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> impleme
 		}
 
 		// Replace this editor with the binary one
-		(this.group ?? this.editorGroupService.activeGroup).replaceEditors([{
+		this.editorService.replaceEditors([{
 			editor: input,
 			replacement: binaryDiffInput,
 			options: {
@@ -220,7 +233,7 @@ export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> impleme
 				pinned: this.group?.isPinned(input),
 				sticky: this.group?.isSticky(input)
 			}
-		}]);
+		}], this.group || ACTIVE_GROUP);
 	}
 
 	protected override computeConfiguration(configuration: IEditorConfiguration): ICodeEditorOptions {
@@ -267,7 +280,6 @@ export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> impleme
 	}
 
 	override clearInput(): void {
-		super.clearInput();
 
 		// Clear input listener
 		this.inputListener.clear();
@@ -275,9 +287,17 @@ export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> impleme
 		// Dispose previous diff navigator
 		this.diffNavigatorDisposables.clear();
 
+		// Update/clear editor view state in settings
+		this.doSaveOrClearTextDiffEditorViewState(this.input);
+
 		// Clear Model
 		const diffEditor = this.getControl();
-		diffEditor?.setModel(null);
+		if (diffEditor) {
+			diffEditor.setModel(null);
+		}
+
+		// Pass to super
+		super.clearInput();
 	}
 
 	getDiffNavigator(): DiffNavigator | undefined {
@@ -288,41 +308,70 @@ export class TextDiffEditor extends BaseTextEditor<IDiffEditorViewState> impleme
 		return super.getControl() as IDiffEditor | undefined;
 	}
 
-	protected override tracksEditorViewState(input: EditorInput): boolean {
-		return input instanceof DiffEditorInput;
+	protected override loadTextEditorViewState(resource: URI): IDiffEditorViewState {
+		return super.loadTextEditorViewState(resource) as IDiffEditorViewState;  // overridden for text diff editor support
 	}
 
-	protected override computeEditorViewState(resource: URI): IDiffEditorViewState | undefined {
-		const control = this.getControl();
-		if (!isDiffEditor(control)) {
-			return undefined;
+	protected override saveState(): void {
+
+		// Update/clear editor view State
+		this.doSaveOrClearTextDiffEditorViewState(this.input);
+
+		super.saveState();
+	}
+
+	private doSaveOrClearTextDiffEditorViewState(input: IEditorInput | undefined): void {
+		if (!(input instanceof DiffEditorInput)) {
+			return; // only supported for diff editor inputs
 		}
 
+		const resource = this.toDiffEditorViewStateResource(input);
+		if (!resource) {
+			return; // unable to retrieve input resource
+		}
+
+		// Clear view state if input is disposed or we are configured to not storing any state
+		if (input.isDisposed() || (!this.shouldRestoreTextEditorViewState(input) && (!this.group || !this.group.contains(input)))) {
+			super.clearTextEditorViewState(resource, this.group);
+		}
+
+		// Otherwise save it
+		else {
+			super.saveTextEditorViewState(resource, input);
+		}
+	}
+
+	protected override retrieveTextEditorViewState(resource: URI): IDiffEditorViewState | null {
+		return this.retrieveTextDiffEditorViewState(resource); // overridden for text diff editor support
+	}
+
+	private retrieveTextDiffEditorViewState(resource: URI): IDiffEditorViewState | null {
+		const control = assertIsDefined(this.getControl());
 		const model = control.getModel();
 		if (!model || !model.modified || !model.original) {
-			return undefined; // view state always needs a model
+			return null; // view state always needs a model
 		}
 
-		const modelUri = this.toEditorViewStateResource(model);
+		const modelUri = this.toDiffEditorViewStateResource(model);
 		if (!modelUri) {
-			return undefined; // model URI is needed to make sure we save the view state correctly
+			return null; // model URI is needed to make sure we save the view state correctly
 		}
 
 		if (!isEqual(modelUri, resource)) {
-			return undefined; // prevent saving view state for a model that is not the expected one
+			return null; // prevent saving view state for a model that is not the expected one
 		}
 
-		return withNullAsUndefined(control.saveViewState());
+		return control.saveViewState();
 	}
 
-	protected override toEditorViewStateResource(modelOrInput: IDiffEditorModel | EditorInput): URI | undefined {
+	private toDiffEditorViewStateResource(modelOrInput: IDiffEditorModel | DiffEditorInput): URI | undefined {
 		let original: URI | undefined;
 		let modified: URI | undefined;
 
 		if (modelOrInput instanceof DiffEditorInput) {
 			original = modelOrInput.original.resource;
 			modified = modelOrInput.modified.resource;
-		} else if (!isEditorInput(modelOrInput)) {
+		} else {
 			original = modelOrInput.original.uri;
 			modified = modelOrInput.modified.uri;
 		}

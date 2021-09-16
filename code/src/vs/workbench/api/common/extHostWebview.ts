@@ -194,7 +194,6 @@ export function serializeWebviewOptions(
 	return {
 		enableCommandUris: options.enableCommandUris,
 		enableScripts: options.enableScripts,
-		enableForms: options.enableForms,
 		portMapping: options.portMapping,
 		localResourceRoots: options.localResourceRoots || getDefaultLocalResourceRoots(extension, workspace)
 	};
@@ -204,7 +203,6 @@ export function reviveOptions(options: extHostProtocol.IWebviewOptions): vscode.
 	return {
 		enableCommandUris: options.enableCommandUris,
 		enableScripts: options.enableScripts,
-		enableForms: options.enableForms,
 		portMapping: options.portMapping,
 		localResourceRoots: options.localResourceRoots?.map(components => URI.from(components)),
 	};

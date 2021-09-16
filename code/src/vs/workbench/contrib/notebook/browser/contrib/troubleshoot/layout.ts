@@ -25,7 +25,7 @@ export class TroubleshootController extends Disposable implements INotebookEdito
 			this._localStore.clear();
 			this._cellStateListeners.forEach(listener => listener.dispose());
 
-			if (!this._notebookEditor.hasModel()) {
+			if (!this._notebookEditor.viewModel) {
 				return;
 			}
 
@@ -47,19 +47,21 @@ export class TroubleshootController extends Disposable implements INotebookEdito
 	}
 
 	private _updateListener() {
-		if (!this._notebookEditor.hasModel()) {
+		if (!this._notebookEditor.viewModel) {
 			return;
 		}
 
-		for (let i = 0; i < this._notebookEditor.getLength(); i++) {
-			const cell = this._notebookEditor.cellAt(i);
+		const viewModel = this._notebookEditor.viewModel;
+
+		for (let i = 0; i < viewModel.length; i++) {
+			const cell = viewModel.viewCells[i];
 
 			this._cellStateListeners.push(cell.onDidChangeLayout(e => {
 				this._log(cell, e);
 			}));
 		}
 
-		this._localStore.add(this._notebookEditor.onDidChangeViewCells(e => {
+		this._localStore.add(viewModel.onDidChangeViewCells(e => {
 			e.splices.reverse().forEach(splice => {
 				const [start, deleted, newCells] = splice;
 				const deletedCells = this._cellStateListeners.splice(start, deleted, ...newCells.map(cell => {
@@ -118,13 +120,12 @@ registerAction2(class extends Action2 {
 		const editorService = accessor.get(IEditorService);
 		const editor = getNotebookEditorFromEditorPane(editorService.activeEditorPane);
 
-		if (!editor || !editor.hasModel()) {
+		if (!editor || !editor.viewModel) {
 			return;
 		}
 
-		for (let i = 0; i < editor.getLength(); i++) {
-			const cell = editor.cellAt(i);
+		editor.viewModel.viewCells.forEach(cell => {
 			console.log(`cell#${cell.handle}`, cell.layoutInfo);
-		}
+		});
 	}
 });

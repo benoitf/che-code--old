@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ITelemetryService, TelemetryConfiguration, TelemetryLevel, TELEMETRY_SETTING_ID } from 'vs/platform/telemetry/common/telemetry';
+import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { MainThreadTelemetryShape, MainContext, IExtHostContext, ExtHostTelemetryShape, ExtHostContext } from '../common/extHost.protocol';
 import { extHostNamedCustomer } from 'vs/workbench/api/common/extHostCustomers';
 import { ClassifiedEvent, StrictPropertyCheck, GDPRClassification } from 'vs/platform/telemetry/common/gdprTypings';
@@ -11,7 +11,6 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IEnvironmentService } from 'vs/platform/environment/common/environment';
 import { IProductService } from 'vs/platform/product/common/productService';
-import { getTelemetryConfiguration, getTelemetryLevel } from 'vs/platform/telemetry/common/telemetryUtils';
 
 @extHostNamedCustomer(MainContext.MainThreadTelemetry)
 export class MainThreadTelemetry extends Disposable implements MainThreadTelemetryShape {
@@ -30,9 +29,9 @@ export class MainThreadTelemetry extends Disposable implements MainThreadTelemet
 
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostTelemetry);
 
-		if (getTelemetryLevel(this._productService, this._environmenService) >= TelemetryLevel.LOG) {
+		if (!this._environmenService.disableTelemetry && this._productService.enableTelemetry) {
 			this._register(this._configurationService.onDidChangeConfiguration(e => {
-				if (e.affectedKeys.includes(TELEMETRY_SETTING_ID)) {
+				if (e.affectedKeys.includes('telemetry.enableTelemetry')) {
 					this._proxy.$onDidChangeTelemetryEnabled(this.telemetryEnabled);
 				}
 			}));
@@ -42,11 +41,11 @@ export class MainThreadTelemetry extends Disposable implements MainThreadTelemet
 	}
 
 	private get telemetryEnabled(): boolean {
-		if (getTelemetryLevel(this._productService, this._environmenService) < TelemetryLevel.USER) {
+		if (this._environmenService.disableTelemetry || !this._productService.enableTelemetry) {
 			return false;
 		}
 
-		return getTelemetryConfiguration(this._configurationService) === TelemetryConfiguration.ON;
+		return !!this._configurationService.getValue('telemetry.enableTelemetry');
 	}
 
 	$publicLog(eventName: string, data: any = Object.create(null)): void {

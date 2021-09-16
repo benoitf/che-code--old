@@ -362,14 +362,6 @@ export class QuickInputList {
 		return Event.map(this.list.onDidChangeSelection, e => ({ items: e.elements.map(e => e.item), event: e.browserEvent }));
 	}
 
-	get scrollTop() {
-		return this.list.scrollTop;
-	}
-
-	set scrollTop(scrollTop: number) {
-		this.list.scrollTop = scrollTop;
-	}
-
 	getAllVisibleChecked() {
 		return this.allVisibleChecked(this.elements, false);
 	}

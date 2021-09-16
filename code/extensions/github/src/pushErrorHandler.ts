@@ -103,8 +103,7 @@ async function handlePushError(repository: Repository, remote: Remote, refspec: 
 					title = commit.message.replace(/\n.*$/m, '');
 				}
 
-				// TODO: mjbvz: TS 4.5 workaround
-				const res = await (octokit as any).pulls.create({
+				const res = await octokit.pulls.create({
 					owner,
 					repo,
 					title,

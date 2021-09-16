@@ -12,8 +12,7 @@ import { toAction } from 'vs/base/common/actions';
 import { VIEWLET_ID, TEXT_FILE_EDITOR_ID } from 'vs/workbench/contrib/files/common/files';
 import { ITextFileService, TextFileOperationError, TextFileOperationResult } from 'vs/workbench/services/textfile/common/textfiles';
 import { BaseTextEditor } from 'vs/workbench/browser/parts/editor/textEditor';
-import { IEditorOpenContext, EditorInputCapabilities } from 'vs/workbench/common/editor';
-import { EditorInput } from 'vs/workbench/common/editor/editorInput';
+import { IEditorInput, IEditorOpenContext, EditorInputCapabilities } from 'vs/workbench/common/editor';
 import { applyTextEditorOptions } from 'vs/workbench/common/editor/editorOptions';
 import { BinaryEditorModel } from 'vs/workbench/common/editor/binaryEditorModel';
 import { FileEditorInput } from 'vs/workbench/contrib/files/browser/editors/fileEditorInput';
@@ -25,7 +24,7 @@ import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ITextResourceConfigurationService } from 'vs/editor/common/services/textResourceConfigurationService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { ICodeEditorViewState, ScrollType } from 'vs/editor/common/editorCommon';
+import { ScrollType } from 'vs/editor/common/editorCommon';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { CancellationToken } from 'vs/base/common/cancellation';
@@ -38,7 +37,7 @@ import { MutableDisposable } from 'vs/base/common/lifecycle';
 /**
  * An implementation of editor for file system resources.
  */
-export class TextFileEditor extends BaseTextEditor<ICodeEditorViewState> {
+export class TextFileEditor extends BaseTextEditor {
 
 	static readonly ID = TEXT_FILE_EDITOR_ID;
 
@@ -76,14 +75,14 @@ export class TextFileEditor extends BaseTextEditor<ICodeEditorViewState> {
 		const deleted = e.rawDeleted;
 		if (deleted) {
 			for (const [resource] of deleted) {
-				this.clearEditorViewState(resource);
+				this.clearTextEditorViewState(resource);
 			}
 		}
 	}
 
 	private onDidRunOperation(e: FileOperationEvent): void {
 		if (e.operation === FileOperation.MOVE && e.target) {
-			this.moveEditorViewState(e.resource, e.target.resource, this.uriIdentityService.extUri);
+			this.moveTextEditorViewState(e.resource, e.target.resource, this.uriIdentityService.extUri);
 		}
 	}
 
@@ -106,6 +105,14 @@ export class TextFileEditor extends BaseTextEditor<ICodeEditorViewState> {
 		}
 	}
 
+	protected override onWillCloseEditorInGroup(editor: IEditorInput): void {
+
+		// React to editors closing to preserve or clear view state. This needs to happen
+		// in the onWillCloseEditor because at that time the editor has not yet
+		// been disposed and we can safely persist the view state still as needed.
+		this.doSaveOrClearTextEditorViewState(editor);
+	}
+
 	override getTitle(): string {
 		return this.input ? this.input.getName() : localize('textFileEditor', "Text File Editor");
 	}
@@ -118,6 +125,9 @@ export class TextFileEditor extends BaseTextEditor<ICodeEditorViewState> {
 
 		// Update our listener for input capabilities
 		this.inputListener.value = input.onDidChangeCapabilities(() => this.onDidChangeInputCapabilities(input));
+
+		// Update/clear view settings if input changes
+		this.doSaveOrClearTextEditorViewState(this.input);
 
 		// Set input and resolve
 		await super.setInput(input, options, context, token);
@@ -142,10 +152,12 @@ export class TextFileEditor extends BaseTextEditor<ICodeEditorViewState> {
 			const textEditor = assertIsDefined(this.getControl());
 			textEditor.setModel(textFileModel.textEditorModel);
 
-			// View state
-			const editorViewState = this.loadEditorViewState(input, context);
-			if (editorViewState) {
-				textEditor.restoreViewState(editorViewState);
+			// Always restore View State if any associated and not disabled via settings
+			if (this.shouldRestoreTextEditorViewState(input, context)) {
+				const editorViewState = this.loadTextEditorViewState(input.resource);
+				if (editorViewState) {
+					textEditor.restoreViewState(editorViewState);
+				}
 			}
 
 			// Apply options to editor if any
@@ -211,7 +223,7 @@ export class TextFileEditor extends BaseTextEditor<ICodeEditorViewState> {
 		input.setForceOpenAsBinary();
 
 		// Open in group
-		(this.group ?? this.editorGroupService.activeGroup).openEditor(input, {
+		this.group?.openEditor(input, {
 			...options,
 			// Make sure to not steal away the currently active group
 			// because we are triggering another openEditor() call
@@ -238,23 +250,45 @@ export class TextFileEditor extends BaseTextEditor<ICodeEditorViewState> {
 	}
 
 	override clearInput(): void {
-		super.clearInput();
 
 		// Clear input listener
 		this.inputListener.clear();
+
+		// Update/clear editor view state in settings
+		this.doSaveOrClearTextEditorViewState(this.input);
 
 		// Clear Model
 		const textEditor = this.getControl();
 		if (textEditor) {
 			textEditor.setModel(null);
 		}
+
+		// Pass to super
+		super.clearInput();
 	}
 
-	protected override tracksEditorViewState(input: EditorInput): boolean {
-		return input instanceof FileEditorInput;
+	protected override saveState(): void {
+
+		// Update/clear editor view State
+		this.doSaveOrClearTextEditorViewState(this.input);
+
+		super.saveState();
 	}
 
-	protected override tracksDisposedEditorViewState(): boolean {
-		return true; // track view state even for disposed editors
+	private doSaveOrClearTextEditorViewState(input: IEditorInput | undefined): void {
+		if (!(input instanceof FileEditorInput)) {
+			return; // ensure we have an input to handle view state for
+		}
+
+		// If the user configured to not restore view state, we clear the view
+		// state unless the editor is still opened in the group.
+		if (!this.shouldRestoreTextEditorViewState(input) && (!this.group || !this.group.contains(input))) {
+			this.clearTextEditorViewState(input.resource, this.group);
+		}
+
+		// Otherwise we save the view state to restore it later
+		else if (!input.isDisposed()) {
+			this.saveTextEditorViewState(input.resource);
+		}
 	}
 }

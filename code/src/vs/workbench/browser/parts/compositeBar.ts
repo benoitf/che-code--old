@@ -152,9 +152,9 @@ export interface ICompositeBarOptions {
 	getActivityAction: (compositeId: string) => ActivityAction;
 	getCompositePinnedAction: (compositeId: string) => IAction;
 	getOnCompositeClickAction: (compositeId: string) => IAction;
-	fillExtraContextMenuActions: (actions: IAction[], e?: MouseEvent | GestureEvent) => void;
+	fillExtraContextMenuActions: (actions: IAction[]) => void;
 	getContextMenuActionsForComposite: (compositeId: string) => IAction[];
-	openComposite: (compositeId: string, preserveFocus?: boolean) => Promise<IComposite | null>;
+	openComposite: (compositeId: string) => Promise<IComposite | null>;
 	getDefaultCompositeId: () => string;
 	hidePart: () => void;
 }
@@ -418,7 +418,7 @@ export class CompositeBar extends Widget implements ICompositeBar {
 		// Case: composite is not the default composite and default composite is still showing
 		// Solv: we open the default composite
 		if (defaultCompositeId !== compositeId && this.isPinned(defaultCompositeId)) {
-			this.options.openComposite(defaultCompositeId, true);
+			this.options.openComposite(defaultCompositeId);
 		}
 
 		// Case: we closed the last visible composite
@@ -627,11 +627,11 @@ export class CompositeBar extends Widget implements ICompositeBar {
 		const event = new StandardMouseEvent(e);
 		this.contextMenuService.showContextMenu({
 			getAnchor: () => { return { x: event.posx, y: event.posy }; },
-			getActions: () => this.getContextMenuActions(e)
+			getActions: () => this.getContextMenuActions()
 		});
 	}
 
-	getContextMenuActions(e?: MouseEvent | GestureEvent): IAction[] {
+	getContextMenuActions(): IAction[] {
 		const actions: IAction[] = this.model.visibleItems
 			.map(({ id, name, activityAction }) => (toAction({
 				id,
@@ -647,7 +647,7 @@ export class CompositeBar extends Widget implements ICompositeBar {
 				}
 			})));
 
-		this.options.fillExtraContextMenuActions(actions, e);
+		this.options.fillExtraContextMenuActions(actions);
 
 		return actions;
 	}

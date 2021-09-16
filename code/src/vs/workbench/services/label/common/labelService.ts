@@ -148,7 +148,10 @@ export class LabelService extends Disposable implements ILabelService {
 		// Without formatting we still need to support the separator
 		// as provided in options (https://github.com/microsoft/vscode/issues/130019)
 		if (!formatting && options.separator) {
-			return label.replace(sepRegexp, options.separator);
+			switch (options.separator) {
+				case paths.win32.sep: return paths.win32.normalize(label);
+				case paths.posix.sep: return paths.posix.normalize(label);
+			}
 		}
 
 		return label;

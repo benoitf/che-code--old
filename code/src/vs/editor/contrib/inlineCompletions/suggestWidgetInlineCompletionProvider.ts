@@ -12,11 +12,9 @@ import { Range } from 'vs/editor/common/core/range';
 import { CompletionItemInsertTextRule } from 'vs/editor/common/modes';
 import { SnippetParser } from 'vs/editor/contrib/snippet/snippetParser';
 import { SnippetSession } from 'vs/editor/contrib/snippet/snippetSession';
-import { CompletionItem } from 'vs/editor/contrib/suggest/suggest';
 import { SuggestController } from 'vs/editor/contrib/suggest/suggestController';
-import { minimizeInlineCompletion } from './inlineCompletionsModel';
-import { NormalizedInlineCompletion, normalizedInlineCompletionsEquals } from './inlineCompletionToGhostText';
-import { compareBy, compareByNumberAsc, findMinBy } from './utils';
+import { ISelectedSuggestion } from 'vs/editor/contrib/suggest/suggestWidget';
+import { NormalizedInlineCompletion } from './inlineCompletionToGhostText';
 
 export interface SuggestWidgetState {
 	/**
@@ -54,10 +52,7 @@ export class SuggestWidgetInlineCompletionProvider extends Disposable {
 		return { selectedItemAsInlineCompletion: this._currentInlineCompletion };
 	}
 
-	constructor(
-		private readonly editor: IActiveCodeEditor,
-		private readonly suggestControllerPreselector: () => NormalizedInlineCompletion | undefined
-	) {
+	constructor(private readonly editor: IActiveCodeEditor) {
 		super();
 
 		// See the command acceptAlternativeSelectedSuggestion that is bound to shift+tab
@@ -76,31 +71,6 @@ export class SuggestWidgetInlineCompletionProvider extends Disposable {
 
 		const suggestController = SuggestController.get(this.editor);
 		if (suggestController) {
-			this._register(suggestController.registerSelector({
-				priority: 100,
-				select: (model, pos, items) => {
-					const textModel = this.editor.getModel();
-					const preselectedMinimized = minimizeInlineCompletion(textModel, this.suggestControllerPreselector());
-					if (!preselectedMinimized) {
-						return -1;
-					}
-					const position = Position.lift(pos);
-
-					const result = findMinBy(
-						items
-							.map((item, index) => {
-								const completion = suggestionToInlineCompletion(suggestController, position, item, this.isShiftKeyPressed);
-								// Minimization normalizes ranges.
-								const minimized = minimizeInlineCompletion(textModel, completion);
-								const valid = minimized.range.equalsRange(preselectedMinimized.range) && preselectedMinimized.text.startsWith(minimized.text);
-								return { index, valid, length: minimized.text.length };
-							})
-							.filter(item => item.valid),
-						compareBy(s => s.length, compareByNumberAsc()));
-					return result ? result.index : - 1;
-				}
-			}));
-
 			let isBoundToSuggestWidget = false;
 			const bindToSuggestWidget = () => {
 				if (isBoundToSuggestWidget) {
@@ -133,7 +103,7 @@ export class SuggestWidgetInlineCompletionProvider extends Disposable {
 	private update(newActive: boolean): void {
 		const newInlineCompletion = this.getInlineCompletion();
 		let shouldFire = false;
-		if (!normalizedInlineCompletionsEquals(this._currentInlineCompletion, newInlineCompletion)) {
+		if (this._currentInlineCompletion !== newInlineCompletion) {
 			this._currentInlineCompletion = newInlineCompletion;
 			shouldFire = true;
 		}
@@ -163,7 +133,7 @@ export class SuggestWidgetInlineCompletionProvider extends Disposable {
 		return suggestionToInlineCompletion(
 			suggestController,
 			this.editor.getPosition(),
-			focusedItem.item,
+			focusedItem,
 			this.isShiftKeyPressed
 		);
 	}
@@ -183,8 +153,9 @@ export class SuggestWidgetInlineCompletionProvider extends Disposable {
 	}
 }
 
-function suggestionToInlineCompletion(suggestController: SuggestController, position: Position, item: CompletionItem, toggleMode: boolean): NormalizedInlineCompletion {
-	// additionalTextEdits might not be resolved here, this could be problematic.
+function suggestionToInlineCompletion(suggestController: SuggestController, position: Position, suggestion: ISelectedSuggestion, toggleMode: boolean): NormalizedInlineCompletion {
+	const item = suggestion.item;
+
 	if (Array.isArray(item.completion.additionalTextEdits) && item.completion.additionalTextEdits.length > 0) {
 		// cannot represent additional text edits
 		return {

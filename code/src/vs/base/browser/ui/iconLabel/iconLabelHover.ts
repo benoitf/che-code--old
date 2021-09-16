@@ -5,7 +5,7 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { HoverPosition } from 'vs/base/browser/ui/hover/hoverWidget';
-import { IHoverDelegate, IHoverDelegateTarget, IHoverWidget } from 'vs/base/browser/ui/iconLabel/iconHoverDelegate';
+import { IHoverDelegate, IHoverDelegateTarget } from 'vs/base/browser/ui/iconLabel/iconHoverDelegate';
 import { IIconLabelMarkdownString } from 'vs/base/browser/ui/iconLabel/iconLabel';
 import { RunOnceScheduler } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
@@ -13,6 +13,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { isFunction, isString } from 'vs/base/common/types';
 import { localize } from 'vs/nls';
+
 
 export function setupNativeHover(htmlElement: HTMLElement, tooltip: string | IIconLabelMarkdownString | undefined): void {
 	if (isString(tooltip)) {
@@ -24,20 +25,7 @@ export function setupNativeHover(htmlElement: HTMLElement, tooltip: string | IIc
 	}
 }
 
-export interface ICustomHover extends IDisposable {
-
-	/**
-	 * Allows to programmatically open the hover.
-	 */
-	show(): void;
-
-	/**
-	 * Allows to programmatically hide the hover.
-	 */
-	hide(): void;
-}
-
-export function setupCustomHover(hoverDelegate: IHoverDelegate, htmlElement: HTMLElement, markdownTooltip: string | IIconLabelMarkdownString | HTMLElement | undefined): ICustomHover | undefined {
+export function setupCustomHover(hoverDelegate: IHoverDelegate, htmlElement: HTMLElement, markdownTooltip: string | IIconLabelMarkdownString | undefined): IDisposable | undefined {
 	if (!markdownTooltip) {
 		return undefined;
 	}
@@ -46,20 +34,9 @@ export function setupCustomHover(hoverDelegate: IHoverDelegate, htmlElement: HTM
 
 	let hoverPreparation: IDisposable | undefined;
 
-	let hoverWidget: IHoverWidget | undefined;
+	let hoverWidget: IDisposable | undefined;
 
-	const hideHover = (disposeWidget: boolean, disposePreparation: boolean) => {
-		if (disposeWidget) {
-			hoverWidget?.dispose();
-			hoverWidget = undefined;
-		}
-		if (disposePreparation) {
-			hoverPreparation?.dispose();
-			hoverPreparation = undefined;
-		}
-	};
-
-	const showHoverDelayed = (delay: number) => {
+	const mouseEnter = (e: MouseEvent) => {
 		if (hoverPreparation) {
 			return;
 		}
@@ -68,7 +45,14 @@ export function setupCustomHover(hoverDelegate: IHoverDelegate, htmlElement: HTM
 
 		const mouseLeaveOrDown = (e: MouseEvent) => {
 			const isMouseDown = e.type === dom.EventType.MOUSE_DOWN;
-			hideHover(isMouseDown, isMouseDown || (<any>e).fromElement === htmlElement);
+			if (isMouseDown) {
+				hoverWidget?.dispose();
+				hoverWidget = undefined;
+			}
+			if (isMouseDown || (<any>e).fromElement === htmlElement) {
+				hoverPreparation?.dispose();
+				hoverPreparation = undefined;
+			}
 		};
 		const mouseLeaveDomListener = dom.addDisposableListener(htmlElement, dom.EventType.MOUSE_LEAVE, mouseLeaveOrDown, true);
 		const mouseDownDownListener = dom.addDisposableListener(htmlElement, dom.EventType.MOUSE_DOWN, mouseLeaveOrDown, true);
@@ -85,7 +69,7 @@ export function setupCustomHover(hoverDelegate: IHoverDelegate, htmlElement: HTM
 		}
 
 		const showHover = async () => {
-			if (hoverPreparation && (hoverWidget?.isDisposed !== false)) {
+			if (hoverPreparation) {
 
 				const hoverOptions = {
 					content: localize('iconLabel.loading', "Loading..."),
@@ -95,7 +79,7 @@ export function setupCustomHover(hoverDelegate: IHoverDelegate, htmlElement: HTM
 				hoverWidget?.dispose();
 				hoverWidget = hoverDelegate.showHover(hoverOptions);
 
-				const resolvedTooltip = (await tooltip(tokenSource.token)) ?? (!isString(markdownTooltip) && !(markdownTooltip instanceof HTMLElement) ? markdownTooltip.markdownNotSupportedFallback : undefined);
+				const resolvedTooltip = (await tooltip(tokenSource.token)) ?? (!isString(markdownTooltip) ? markdownTooltip.markdownNotSupportedFallback : undefined);
 
 				hoverWidget?.dispose();
 				hoverWidget = undefined;
@@ -115,7 +99,7 @@ export function setupCustomHover(hoverDelegate: IHoverDelegate, htmlElement: HTM
 			}
 			mouseMoveDomListener?.dispose();
 		};
-		const timeout = new RunOnceScheduler(showHover, delay);
+		const timeout = new RunOnceScheduler(showHover, hoverDelegate.delay);
 		timeout.schedule();
 
 		hoverPreparation = toDisposable(() => {
@@ -126,23 +110,17 @@ export function setupCustomHover(hoverDelegate: IHoverDelegate, htmlElement: HTM
 			tokenSource.dispose(true);
 		});
 	};
-	const mouseOverDomEmitter = dom.addDisposableListener(htmlElement, dom.EventType.MOUSE_OVER, () => showHoverDelayed(hoverDelegate.delay), true);
-	return {
-		show: () => {
-			showHoverDelayed(0); // show hover immediately
-		},
-		hide: () => {
-			hideHover(true, true);
-		},
-		dispose: () => {
-			mouseOverDomEmitter.dispose();
-			hideHover(true, true);
-		}
-	};
+	const mouseOverDomEmitter = dom.addDisposableListener(htmlElement, dom.EventType.MOUSE_OVER, mouseEnter, true);
+	return toDisposable(() => {
+		mouseOverDomEmitter.dispose();
+		hoverPreparation?.dispose();
+		hoverWidget?.dispose();
+	});
 }
 
-function getTooltipForCustom(markdownTooltip: string | IIconLabelMarkdownString | HTMLElement): (token: CancellationToken) => Promise<string | IMarkdownString | HTMLElement | undefined> {
-	if (isString(markdownTooltip) || markdownTooltip instanceof HTMLElement) {
+
+function getTooltipForCustom(markdownTooltip: string | IIconLabelMarkdownString): (token: CancellationToken) => Promise<string | IMarkdownString | undefined> {
+	if (isString(markdownTooltip)) {
 		return async () => markdownTooltip;
 	} else if (isFunction(markdownTooltip.markdown)) {
 		return markdownTooltip.markdown;

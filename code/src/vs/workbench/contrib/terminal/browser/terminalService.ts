@@ -23,7 +23,7 @@ import { ILabelService } from 'vs/platform/label/common/label';
 import { INotificationService } from 'vs/platform/notification/common/notification';
 import { IKeyMods, IPickOptions, IQuickInputButton, IQuickInputService, IQuickPickItem, IQuickPickSeparator } from 'vs/platform/quickinput/common/quickInput';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { ICreateContributedTerminalProfileOptions, IExtensionTerminalProfile, IShellLaunchConfig, ITerminalLaunchError, ITerminalProfile, ITerminalProfileObject, ITerminalProfileType, ITerminalsLayoutInfo, ITerminalsLayoutInfoById, TerminalLocation, TerminalLocationString, TerminalSettingId, TerminalSettingPrefix, TitleEventSource } from 'vs/platform/terminal/common/terminal';
+import { ICreateContributedTerminalProfileOptions, IExtensionTerminalProfile, IShellLaunchConfig, ITerminalLaunchError, ITerminalProfile, ITerminalProfileObject, ITerminalProfileType, ITerminalsLayoutInfo, ITerminalsLayoutInfoById, TerminalLocation, TerminalLocationString, TerminalSettingId, TerminalSettingPrefix } from 'vs/platform/terminal/common/terminal';
 import { registerTerminalDefaultProfileConfiguration } from 'vs/platform/terminal/common/terminalPlatformConfiguration';
 import { iconForeground } from 'vs/platform/theme/common/colorRegistry';
 import { IconDefinition } from 'vs/platform/theme/common/iconRegistry';
@@ -50,7 +50,6 @@ import { ILifecycleService, ShutdownReason, WillShutdownEvent } from 'vs/workben
 import { IRemoteAgentService } from 'vs/workbench/services/remote/common/remoteAgentService';
 import { ACTIVE_GROUP, SIDE_GROUP } from 'vs/workbench/services/editor/common/editorService';
 import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
-import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 
 export class TerminalService implements ITerminalService {
 	declare _serviceBrand: undefined;
@@ -180,7 +179,6 @@ export class TerminalService implements ITerminalService {
 		@IExtensionService private readonly _extensionService: IExtensionService,
 		@INotificationService private readonly _notificationService: INotificationService,
 		@IThemeService private readonly _themeService: IThemeService,
-		@IWorkspaceContextService workspaceContextService: IWorkspaceContextService,
 		@optional(ILocalTerminalService) localTerminalService: ILocalTerminalService
 	) {
 		this._localTerminalService = localTerminalService;
@@ -257,14 +255,8 @@ export class TerminalService implements ITerminalService {
 				e.affectsConfiguration(TerminalSettingPrefix.Profiles + platformKey) ||
 				e.affectsConfiguration(TerminalSettingId.UseWslProfiles)) {
 				this._refreshAvailableProfiles();
-			} else if (
-				e.affectsConfiguration(TerminalSettingId.TerminalTitle) ||
-				e.affectsConfiguration(TerminalSettingId.TerminalTitleSeparator) ||
-				e.affectsConfiguration(TerminalSettingId.TerminalDescription)) {
-				this._updateTitles();
 			}
 		});
-		workspaceContextService.onDidChangeWorkspaceFolders(() => this._updateTitles());
 
 		// Register a resource formatter for terminal URIs
 		labelService.registerFormatter({
@@ -317,12 +309,6 @@ export class TerminalService implements ITerminalService {
 
 	getOffProcessTerminalService(): IOffProcessTerminalService | undefined {
 		return this._primaryOffProcessTerminalService;
-	}
-
-	private _updateTitles(): void {
-		for (const instance of this.instances) {
-			instance.setTitle(instance.title, TitleEventSource.Config);
-		}
 	}
 
 	private _forwardInstanceHostEvents(host: ITerminalInstanceHost) {
@@ -1226,8 +1212,9 @@ export class TerminalService implements ITerminalService {
 		const parent = this._getSplitParent(options?.location);
 		if (parent) {
 			return this._splitTerminal(shellLaunchConfig, location, parent);
+		} else {
+			return this._createTerminal(shellLaunchConfig, location, options);
 		}
-		return this._createTerminal(shellLaunchConfig, location, options);
 	}
 
 	private _splitTerminal(shellLaunchConfig: IShellLaunchConfig, location: TerminalLocation, parent: ITerminalInstance): ITerminalInstance {

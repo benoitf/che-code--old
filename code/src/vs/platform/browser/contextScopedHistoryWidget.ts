@@ -11,7 +11,6 @@ import { HistoryInputBox, IHistoryInputOptions } from 'vs/base/browser/ui/inputb
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { ContextKeyExpr, IContextKey, IContextKeyService, IContextKeyServiceTarget, RawContextKey } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingsRegistry, KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { Context as SuggestContext } from 'vs/editor/contrib/suggest/suggest';
 
 export const HistoryNavigationWidgetContext = 'historyNavigationWidget';
 const HistoryNavigationForwardsEnablementContext = 'historyNavigationForwardsEnabled';
@@ -90,11 +89,7 @@ export class ContextScopedReplaceInput extends ReplaceInput {
 KeybindingsRegistry.registerCommandAndKeybindingRule({
 	id: 'history.showPrevious',
 	weight: KeybindingWeight.WorkbenchContrib,
-	when: ContextKeyExpr.and(
-		ContextKeyExpr.has(HistoryNavigationWidgetContext),
-		ContextKeyExpr.equals(HistoryNavigationBackwardsEnablementContext, true),
-		SuggestContext.Visible.isEqualTo(false),
-	),
+	when: ContextKeyExpr.and(ContextKeyExpr.has(HistoryNavigationWidgetContext), ContextKeyExpr.equals(HistoryNavigationBackwardsEnablementContext, true)),
 	primary: KeyCode.UpArrow,
 	secondary: [KeyMod.Alt | KeyCode.UpArrow],
 	handler: (accessor) => {
@@ -109,11 +104,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 KeybindingsRegistry.registerCommandAndKeybindingRule({
 	id: 'history.showNext',
 	weight: KeybindingWeight.WorkbenchContrib,
-	when: ContextKeyExpr.and(
-		ContextKeyExpr.has(HistoryNavigationWidgetContext),
-		ContextKeyExpr.equals(HistoryNavigationForwardsEnablementContext, true),
-		SuggestContext.Visible.isEqualTo(false),
-	),
+	when: ContextKeyExpr.and(ContextKeyExpr.has(HistoryNavigationWidgetContext), ContextKeyExpr.equals(HistoryNavigationForwardsEnablementContext, true)),
 	primary: KeyCode.DownArrow,
 	secondary: [KeyMod.Alt | KeyCode.DownArrow],
 	handler: (accessor) => {

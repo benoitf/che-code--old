@@ -520,7 +520,6 @@ export class NativeWindow extends Disposable {
 				}
 
 				if (!options?.openExternal) {
-
 					// Assume `uri` this is a workspace uri, let's see if we can handle it
 					await this.fileService.activateProvider(uri.scheme);
 

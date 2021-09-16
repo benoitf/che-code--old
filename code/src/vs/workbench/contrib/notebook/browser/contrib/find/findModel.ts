@@ -42,7 +42,7 @@ export class FindModel extends Disposable {
 		super();
 
 		this._register(_state.onFindReplaceStateChange(e => {
-			if (e.searchString || e.isRegex || e.matchCase || e.searchScope || e.wholeWord || (e.isRevealed && this._state.isRevealed)) {
+			if (e.searchString || (e.isRevealed && this._state.isRevealed)) {
 				this.research();
 			}
 
@@ -133,7 +133,7 @@ export class FindModel extends Disposable {
 	}
 
 	research() {
-		if (!this._state.isRevealed || !this._notebookEditor.hasModel()) {
+		if (!this._state.isRevealed) {
 			this.set([], false);
 			return;
 		}
@@ -156,11 +156,13 @@ export class FindModel extends Disposable {
 
 		const oldCurrIndex = this._findMatchesStarts!.getIndexOf(this._currentMatch);
 		const oldCurrCell = this._findMatches[oldCurrIndex.index].cell;
-		const oldCurrMatchCellIndex = this._notebookEditor.getCellIndex(oldCurrCell);
+		const oldCurrMatchCellIndex = this._notebookEditor.viewModel!.getCellIndex(oldCurrCell);
 
 		if (oldCurrMatchCellIndex < 0) {
 			// the cell containing the active match is deleted
-			if (this._notebookEditor.getLength() === 0) {
+			const focusedCell = this._notebookEditor.viewModel!.viewCells[this._notebookEditor.viewModel!.getFocus().start];
+
+			if (!focusedCell) {
 				this.set(findMatches, false);
 				return;
 			}
@@ -171,7 +173,7 @@ export class FindModel extends Disposable {
 		}
 
 		// the cell still exist
-		const cell = this._notebookEditor.cellAt(oldCurrMatchCellIndex);
+		const cell = this._notebookEditor.viewModel!.viewCells[oldCurrMatchCellIndex];
 		if (cell.cellKind === CellKind.Markup && cell.getEditState() === CellEditState.Preview) {
 			// find the nearest match above this cell
 			const matchAfterSelection = findFirstInSorted(findMatches.map(match => match.index), index => index >= oldCurrMatchCellIndex);
@@ -255,13 +257,7 @@ export class FindModel extends Disposable {
 			return null;
 		}
 
-		if (!this._notebookEditor.hasModel()) {
-			return null;
-		}
-
-		const vm = this._notebookEditor._getViewModel();
-
-		const findMatches = vm.find(val, options).filter(match => match.matches.length > 0);
+		const findMatches = this._notebookEditor.viewModel!.find(val, options).filter(match => match.matches.length > 0);
 		return findMatches;
 	}
 

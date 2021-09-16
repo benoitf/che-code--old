@@ -15,7 +15,8 @@
   ],
   "extensionKind": [
     "ui",
-    "workspace"
+    "workspace",
+    "web"
   ],
   "activationEvents": [
     "onAuthenticationRequest:github",

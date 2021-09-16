@@ -49,11 +49,6 @@ export class BracketPairColorizer extends Disposable implements DecorationProvid
 			this.updateCache();
 		}));
 
-		this._register(textModel.onDidChangeLanguage(e => {
-			this.cache.clear();
-			this.updateCache();
-		}));
-
 		this._register(textModel.onDidChangeAttached(() => {
 			this.updateCache();
 		}));
