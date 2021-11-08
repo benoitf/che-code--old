@@ -273,8 +273,8 @@ class CellContentProvider implements ITextModelContentProvider {
 						return cell.textBuffer.getLineContent(1).substr(0, limit);
 					}
 				};
-				const modeId = this._modeService.getModeIdForLanguageName(cell.language);
-				const languageSelection = modeId ? this._modeService.create(modeId) : (cell.cellKind === CellKind.Markup ? this._modeService.create('markdown') : this._modeService.createByFilepathOrFirstLine(resource, cell.textBuffer.getLineContent(1)));
+				const languageId = this._modeService.getModeIdForLanguageName(cell.language);
+				const languageSelection = languageId ? this._modeService.create(languageId) : (cell.cellKind === CellKind.Markup ? this._modeService.create('markdown') : this._modeService.createByFilepathOrFirstLine(resource, cell.textBuffer.getLineContent(1)));
 				result = this._modelService.createModel(
 					bufferFactory,
 					languageSelection,
@@ -461,14 +461,6 @@ class RegisterSchemasContribution extends Disposable implements IWorkbenchContri
 				['language']: {
 					type: 'string',
 					description: 'The language for the cell'
-				},
-				['inputCollapsed']: {
-					type: 'boolean',
-					description: `Whether a code cell's editor is collapsed`
-				},
-				['outputCollapsed']: {
-					type: 'boolean',
-					description: `Whether a code cell's outputs are collapsed`
 				}
 			},
 			// patternProperties: allSettings.patternProperties,

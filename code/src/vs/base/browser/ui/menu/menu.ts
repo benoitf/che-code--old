@@ -19,7 +19,8 @@ import { Codicon, registerCodicon } from 'vs/base/common/codicons';
 import { Color } from 'vs/base/common/color';
 import { Event } from 'vs/base/common/event';
 import { stripIcons } from 'vs/base/common/iconLabels';
-import { KeyCode, ResolvedKeybinding } from 'vs/base/common/keyCodes';
+import { KeyCode } from 'vs/base/common/keyCodes';
+import { ResolvedKeybinding } from 'vs/base/common/keybindings';
 import { DisposableStore } from 'vs/base/common/lifecycle';
 import { isLinux, isMacintosh } from 'vs/base/common/platform';
 import { ScrollbarVisibility, ScrollEvent } from 'vs/base/common/scrollable';
@@ -344,7 +345,7 @@ export class Menu extends ActionBar {
 	}
 
 	protected override updateFocus(fromRight?: boolean): void {
-		super.updateFocus(fromRight, true);
+		super.updateFocus(fromRight, true, true);
 
 		if (typeof this.focusedItem !== 'undefined') {
 			// Workaround for #80047 caused by an issue in chromium
@@ -678,14 +679,14 @@ class BaseMenuActionViewItem extends BaseActionViewItem {
 			return;
 		}
 
-		if (this.getAction().checked) {
-			this.item.classList.add('checked');
+		const checked = this.getAction().checked;
+		this.item.classList.toggle('checked', !!checked);
+		if (checked !== undefined) {
 			this.item.setAttribute('role', 'menuitemcheckbox');
-			this.item.setAttribute('aria-checked', 'true');
+			this.item.setAttribute('aria-checked', checked ? 'true' : 'false');
 		} else {
-			this.item.classList.remove('checked');
 			this.item.setAttribute('role', 'menuitem');
-			this.item.setAttribute('aria-checked', 'false');
+			this.item.setAttribute('aria-checked', '');
 		}
 	}
 

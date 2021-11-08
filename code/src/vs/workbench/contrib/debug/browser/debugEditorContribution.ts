@@ -41,7 +41,7 @@ import { ModesHoverController } from 'vs/editor/contrib/hover/hover';
 import { HoverStartMode } from 'vs/editor/contrib/hover/hoverOperation';
 import { IHostService } from 'vs/workbench/services/host/browser/host';
 import { Event } from 'vs/base/common/event';
-import { IUriIdentityService } from 'vs/workbench/services/uriIdentity/common/uriIdentity';
+import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { Expression } from 'vs/workbench/contrib/debug/common/debugModel';
 import { themeColorFromId } from 'vs/platform/theme/common/themeService';
@@ -326,7 +326,7 @@ export class DebugEditorContribution implements IDebugEditorContribution {
 			const model = this.editor.getModel();
 			let overrides = {
 				resource: model.uri,
-				overrideIdentifier: model.getLanguageIdentifier().language
+				overrideIdentifier: model.getLanguageId()
 			};
 			const defaultConfiguration = this.configurationService.getValue<IEditorHoverOptions>('editor.hover', overrides);
 			this.editor.updateOptions({

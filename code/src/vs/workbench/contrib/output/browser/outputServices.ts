@@ -16,9 +16,10 @@ import { ITextModelService, ITextModelContentProvider } from 'vs/editor/common/s
 import { ITextModel } from 'vs/editor/common/model';
 import { ILogService } from 'vs/platform/log/common/log';
 import { ILifecycleService } from 'vs/workbench/services/lifecycle/common/lifecycle';
-import { IOutputChannelModel, IOutputChannelModelService } from 'vs/workbench/contrib/output/common/outputChannelModel';
+import { IOutputChannelModel } from 'vs/workbench/contrib/output/common/outputChannelModel';
 import { IViewsService } from 'vs/workbench/common/views';
 import { OutputViewPane } from 'vs/workbench/contrib/output/browser/outputView';
+import { IOutputChannelModelService } from 'vs/workbench/contrib/output/common/outputChannelModelService';
 
 const OUTPUT_ACTIVE_CHANNEL_KEY = 'output.activechannel';
 
@@ -51,6 +52,10 @@ class OutputChannel extends Disposable implements IOutputChannel {
 
 	clear(till?: number): void {
 		this.model.clear(till);
+	}
+
+	replaceAll(till: number, value: string): void {
+		this.model.replaceAll(till, value);
 	}
 }
 
