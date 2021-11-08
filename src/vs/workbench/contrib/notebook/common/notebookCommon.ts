@@ -8,6 +8,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { IDiffResult, ISequence } from 'vs/base/common/diff/diff';
 import { Event } from 'vs/base/common/event';
 import * as glob from 'vs/base/common/glob';
+import { Iterable } from 'vs/base/common/iterator';
 import { Mimes } from 'vs/base/common/mime';
 import { Schemas } from 'vs/base/common/network';
 import { basename } from 'vs/base/common/path';
@@ -32,7 +33,7 @@ export enum CellKind {
 	Code = 2
 }
 
-export const NOTEBOOK_DISPLAY_ORDER = [
+export const NOTEBOOK_DISPLAY_ORDER: readonly string[] = [
 	'application/json',
 	'application/javascript',
 	'text/html',
@@ -44,7 +45,7 @@ export const NOTEBOOK_DISPLAY_ORDER = [
 	Mimes.text
 ];
 
-export const ACCESSIBLE_NOTEBOOK_DISPLAY_ORDER = [
+export const ACCESSIBLE_NOTEBOOK_DISPLAY_ORDER: readonly string[] = [
 	Mimes.latex,
 	Mimes.markdown,
 	'application/json',
@@ -54,6 +55,17 @@ export const ACCESSIBLE_NOTEBOOK_DISPLAY_ORDER = [
 	'image/png',
 	'image/jpeg',
 ];
+
+/**
+ * A mapping of extension IDs who contain renderers, to extensions who they
+ * should be treated as the same in the renderer selection logic. This is used
+ * to prefer the 1st party Jupyter renderers even though they're in a separate
+ * extension, for instance. See #136247.
+ */
+export const RENDERER_EQUIVALENT_EXTENSIONS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+	['ms-toolsai.jupyter', new Set(['vscode.ipynb'])],
+	['ms-toolsai.jupyter-renderers', new Set(['vscode.ipynb'])],
+]);
 
 export const BUILTIN_RENDERER_ID = '_builtin';
 export const RENDERER_NOT_AVAILABLE = '_notAvailable';
@@ -80,9 +92,6 @@ export interface INotebookCellPreviousExecutionResult {
 }
 
 export interface NotebookCellMetadata {
-	inputCollapsed?: boolean;
-	outputCollapsed?: boolean;
-
 	/**
 	 * custom metadata
 	 */
@@ -108,8 +117,6 @@ export interface TransientOptions {
 	transientCellMetadata: TransientCellMetadata;
 	transientDocumentMetadata: TransientDocumentMetadata;
 }
-
-
 
 /** Note: enum values are used for sorting */
 export const enum NotebookRendererMatch {
@@ -148,6 +155,8 @@ export interface INotebookRendererInfo {
 	readonly mimeTypes: readonly string[];
 
 	readonly dependencies: readonly string[];
+
+	readonly isBuiltin: boolean;
 
 	matchesWithoutKernel(mimeType: string): NotebookRendererMatch;
 	matches(mimeType: string, kernelProvides: ReadonlyArray<string>): NotebookRendererMatch;
@@ -591,38 +600,93 @@ export function mimeTypeIsMergeable(mimeType: string): boolean {
 	return _mimeTypeInfo.get(mimeType)?.mergeable ?? false;
 }
 
-function matchGlobUniversal(pattern: string, path: string) {
-	if (isWindows) {
-		pattern = pattern.replace(/\//g, '\\');
-		path = path.replace(/\//g, '\\');
-	}
+const normalizeSlashes = (str: string) => isWindows ? str.replace(/\//g, '\\') : str;
 
-	return glob.match(pattern, path);
+interface IMimeTypeWithMatcher {
+	pattern: string;
+	matches: glob.ParsedPattern;
 }
 
+export class MimeTypeDisplayOrder {
+	private readonly order: IMimeTypeWithMatcher[];
 
-function getMimeTypeOrder(mimeType: string, userDisplayOrder: string[], defaultOrder: string[]) {
-	let order = 0;
-	for (let i = 0; i < userDisplayOrder.length; i++) {
-		if (matchGlobUniversal(userDisplayOrder[i], mimeType)) {
-			return order;
-		}
-		order++;
+	constructor(
+		initialValue: readonly string[] = [],
+		private readonly defaultOrder = NOTEBOOK_DISPLAY_ORDER,
+	) {
+		this.order = [...new Set(initialValue)].map(pattern => ({
+			pattern,
+			matches: glob.parse(normalizeSlashes(pattern))
+		}));
 	}
 
-	for (let i = 0; i < defaultOrder.length; i++) {
-		if (matchGlobUniversal(defaultOrder[i], mimeType)) {
-			return order;
+	/**
+	 * Returns a sorted array of the input mimetypes.
+	 */
+	public sort(mimetypes: Iterable<string>): string[] {
+		const remaining = new Map(Iterable.map(mimetypes, m => [m, normalizeSlashes(m)]));
+		let sorted: string[] = [];
+
+		for (const { matches } of this.order) {
+			for (const [original, normalized] of remaining) {
+				if (matches(normalized)) {
+					sorted.push(original);
+					remaining.delete(original);
+					break;
+				}
+			}
 		}
 
-		order++;
+		if (remaining.size) {
+			sorted = sorted.concat([...remaining.keys()].sort(
+				(a, b) => this.defaultOrder.indexOf(a) - this.defaultOrder.indexOf(b),
+			));
+		}
+
+		return sorted;
 	}
 
-	return order;
-}
+	/**
+	 * Records that the user selected the given mimetype over the other
+	 * possible mimetypes, prioritizing it for future reference.
+	 */
+	public prioritize(chosenMimetype: string, otherMimetypes: readonly string[]) {
+		const chosenIndex = this.findIndex(chosenMimetype);
+		if (chosenIndex === -1) {
+			// always first, nothing more to do
+			this.order.unshift({ pattern: chosenMimetype, matches: glob.parse(normalizeSlashes(chosenMimetype)) });
+			return;
+		}
 
-export function sortMimeTypes(mimeTypes: string[], userDisplayOrder: string[], defaultOrder: string[]) {
-	return mimeTypes.sort((a, b) => getMimeTypeOrder(a, userDisplayOrder, defaultOrder) - getMimeTypeOrder(b, userDisplayOrder, defaultOrder));
+		// Get the other mimetypes that are before the chosenMimetype. Then, move
+		// them after it, retaining order.
+		const uniqueIndicies = new Set(otherMimetypes.map(m => this.findIndex(m, chosenIndex)));
+		uniqueIndicies.delete(-1);
+		const otherIndices = Array.from(uniqueIndicies).sort();
+		this.order.splice(chosenIndex + 1, 0, ...otherIndices.map(i => this.order[i]));
+
+		for (let oi = otherIndices.length - 1; oi >= 0; oi--) {
+			this.order.splice(otherIndices[oi], 1);
+		}
+	}
+
+	/**
+	 * Gets an array of in-order mimetype preferences.
+	 */
+	public toArray() {
+		return this.order.map(o => o.pattern);
+	}
+
+	private findIndex(mimeType: string, maxIndex = this.order.length) {
+		const normalized = normalizeSlashes(mimeType);
+		for (let i = 0; i < maxIndex; i++) {
+			if (this.order[i].matches(normalized)) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
 }
 
 interface IMutableSplice<T> extends ISplice<T> {

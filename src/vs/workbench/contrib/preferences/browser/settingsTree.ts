@@ -359,6 +359,12 @@ export function resolveConfiguredUntrustedSettings(groups: ISettingsGroup[], tar
 	return [...allSettings].filter(setting => setting.restricted && inspectSetting(setting.key, target, configurationService).isConfigured);
 }
 
+function compareNullableIntegers(a?: number, b?: number) {
+	const firstElem = a ?? Number.MAX_SAFE_INTEGER;
+	const secondElem = b ?? Number.MAX_SAFE_INTEGER;
+	return firstElem - secondElem;
+}
+
 export async function resolveExtensionsSettings(extensionService: IExtensionService, groups: ISettingsGroup[]): Promise<ITOCEntry<ISetting>> {
 	const extGroupTree = new Map<string, ITOCEntry<ISetting>>();
 	const addEntryToTree = (extensionId: string, extensionName: string, childEntry: ITOCEntry<ISetting>) => {
@@ -396,8 +402,14 @@ export async function resolveExtensionsSettings(extensionService: IExtensionServ
 	return Promise.all(processPromises).then(() => {
 		const extGroups: ITOCEntry<ISetting>[] = [];
 		for (const value of extGroupTree.values()) {
+			for (const child of value.children!) {
+				// Sort the individual settings
+				child.settings?.sort((a, b) => {
+					return compareNullableIntegers(a.order, b.order);
+				});
+			}
 			if (value.children!.length === 1) {
-				// push a flattened setting
+				// Push a flattened setting
 				extGroups.push({
 					id: value.id,
 					label: value.children![0].label,
@@ -405,12 +417,7 @@ export async function resolveExtensionsSettings(extensionService: IExtensionServ
 				});
 			} else {
 				value.children!.sort((a, b) => {
-					if (a.order !== undefined && b.order !== undefined) {
-						return a.order - b.order;
-					} else {
-						// leave things as-is
-						return 0;
-					}
+					return compareNullableIntegers(a.order, b.order);
 				});
 				extGroups.push(value);
 			}
@@ -868,6 +875,7 @@ export abstract class AbstractSettingRenderer extends Disposable implements ITre
 		} else {
 			template.deprecationWarningElement.innerText = deprecationText;
 		}
+		template.deprecationWarningElement.prepend($('.codicon.codicon-error'));
 		template.containerElement.classList.toggle('is-deprecated', !!deprecationText);
 
 		this.renderValue(element, <ISettingItemTemplate>template, onChange);
@@ -1493,6 +1501,7 @@ abstract class AbstractSettingTextRenderer extends AbstractSettingRenderer imple
 	protected renderValue(dataElement: SettingsTreeSettingElement, template: ISettingTextItemTemplate, onChange: (value: string) => void): void {
 		template.onChange = undefined;
 		template.inputBox.value = dataElement.value;
+		template.inputBox.setAriaLabel(dataElement.setting.key);
 		template.onChange = value => {
 			if (!renderValidations(dataElement, template, false)) {
 				onChange(value);
@@ -1619,6 +1628,8 @@ export class SettingEnumRenderer extends AbstractSettingRenderer implements ITre
 			createdDefault = true;
 		}
 
+		// Use String constructor in case of null or undefined values
+		const stringifiedDefaultValue = escapeInvisibleChars(String(dataElement.defaultValue));
 		const displayOptions = settingEnum
 			.map(String)
 			.map(escapeInvisibleChars)
@@ -1635,11 +1646,12 @@ export class SettingEnumRenderer extends AbstractSettingRenderer implements ITre
 						},
 						disposables: disposables
 					},
-					decoratorRight: (data === dataElement.defaultValue || createdDefault && index === 0 ? localize('settings.Default', "default") : '')
+					decoratorRight: (((data === stringifiedDefaultValue) || (createdDefault && index === 0)) ? localize('settings.Default', "default") : '')
 				};
 			});
 
 		template.selectBox.setOptions(displayOptions);
+		template.selectBox.setAriaLabel(dataElement.setting.key);
 
 		let idx = settingEnum.indexOf(dataElement.value);
 		if (idx === -1) {
@@ -1708,6 +1720,7 @@ export class SettingNumberRenderer extends AbstractSettingRenderer implements IT
 
 		template.onChange = undefined;
 		template.inputBox.value = dataElement.value;
+		template.inputBox.setAriaLabel(dataElement.setting.key);
 		template.onChange = value => {
 			if (!renderValidations(dataElement, template, false)) {
 				onChange(nullNumParseFn(value));
@@ -1803,6 +1816,7 @@ export class SettingBoolRenderer extends AbstractSettingRenderer implements ITre
 	protected renderValue(dataElement: SettingsTreeSettingElement, template: ISettingBoolItemTemplate, onChange: (value: boolean) => void): void {
 		template.onChange = undefined;
 		template.checkbox.checked = dataElement.value;
+		template.checkbox.setTitle(dataElement.setting.key);
 		template.onChange = onChange;
 	}
 }

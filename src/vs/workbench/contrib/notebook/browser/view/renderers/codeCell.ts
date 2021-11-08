@@ -13,6 +13,7 @@ import { IDimension } from 'vs/editor/common/editorCommon';
 import { IReadonlyTextBuffer } from 'vs/editor/common/model';
 import { TokenizationRegistry } from 'vs/editor/common/modes';
 import { tokenizeToString } from 'vs/editor/common/modes/textToHtmlTokenizer';
+import { IModeService } from 'vs/editor/common/services/modeService';
 import { localize } from 'vs/nls';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
@@ -40,7 +41,8 @@ export class CodeCell extends Disposable {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@INotebookCellStatusBarService readonly notebookCellStatusBarService: INotebookCellStatusBarService,
 		@IKeybindingService readonly keybindingService: IKeybindingService,
-		@IOpenerService readonly openerService: IOpenerService
+		@IOpenerService readonly openerService: IOpenerService,
+		@IModeService readonly modeService: IModeService,
 	) {
 		super();
 
@@ -127,8 +129,13 @@ export class CodeCell extends Disposable {
 		this._register(viewCell.onDidChangeState((e) => {
 			if (e.metadataChanged || e.internalMetadataChanged) {
 				updateEditorOptions();
+			}
 
-				if (this.updateForCollapseState()) {
+			if (e.inputCollapsedChanged || e.outputCollapsedChanged) {
+				this.viewCell.pauseLayout();
+				const updated = this.updateForCollapseState();
+				this.viewCell.resumeLayout();
+				if (updated) {
 					this.relayoutCell();
 				}
 			}
@@ -244,7 +251,7 @@ export class CodeCell extends Disposable {
 		this._outputContainerRenderer = this.instantiationService.createInstance(CellOutputContainer, notebookEditor, viewCell, templateData, { limit: 500 });
 		this._outputContainerRenderer.render(editorHeight);
 		// Need to do this after the intial renderOutput
-		if (this.viewCell.metadata.outputCollapsed === undefined && this.viewCell.metadata.inputCollapsed === undefined) {
+		if (this.viewCell.isOutputCollapsed === undefined && this.viewCell.isInputCollapsed === undefined) {
 			this.initialViewUpdateExpanded();
 			this.viewCell.layoutChange({});
 		}
@@ -257,20 +264,20 @@ export class CodeCell extends Disposable {
 	}
 
 	private updateForCollapseState(): boolean {
-		if (this.viewCell.metadata.outputCollapsed === this._renderedOutputCollapseState &&
-			this.viewCell.metadata.inputCollapsed === this._renderedInputCollapseState) {
+		if (this.viewCell.isOutputCollapsed === this._renderedOutputCollapseState &&
+			this.viewCell.isInputCollapsed === this._renderedInputCollapseState) {
 			return false;
 		}
 
-		this.viewCell.layoutChange({});
+		this.viewCell.layoutChange({ editorHeight: true });
 
-		if (this.viewCell.metadata.inputCollapsed) {
+		if (this.viewCell.isInputCollapsed) {
 			this._collapseInput();
 		} else {
 			this._showInput();
 		}
 
-		if (this.viewCell.metadata.outputCollapsed) {
+		if (this.viewCell.isOutputCollapsed) {
 			this._collapseOutput();
 		} else {
 			this._showOutput(false);
@@ -278,8 +285,8 @@ export class CodeCell extends Disposable {
 
 		this.relayoutCell();
 
-		this._renderedOutputCollapseState = this.viewCell.metadata.outputCollapsed;
-		this._renderedInputCollapseState = this.viewCell.metadata.inputCollapsed;
+		this._renderedOutputCollapseState = this.viewCell.isOutputCollapsed;
+		this._renderedInputCollapseState = this.viewCell.isInputCollapsed;
 
 		return true;
 	}
@@ -319,7 +326,7 @@ export class CodeCell extends Disposable {
 	}
 
 	private _getRichText(buffer: IReadonlyTextBuffer, language: string) {
-		return tokenizeToString(buffer.getLineContent(1), TokenizationRegistry.get(language)!);
+		return tokenizeToString(buffer.getLineContent(1), this.modeService.languageIdCodec, TokenizationRegistry.get(language)!);
 	}
 
 	private _removeInputCollapsePreview() {

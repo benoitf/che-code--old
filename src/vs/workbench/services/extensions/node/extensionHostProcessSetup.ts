@@ -255,7 +255,9 @@ function connectToRenderer(protocol: IMessagePassingProtocol): Promise<IRenderer
 								if (e && e.stack) {
 									console.warn(`stack trace: ${e.stack}`);
 								}
-								onUnexpectedError(reason);
+								if (reason) {
+									onUnexpectedError(reason);
+								}
 							}
 						});
 					}
@@ -333,6 +335,7 @@ export async function startExtensionHostProcess(): Promise<void> {
 	// host abstraction
 	const hostUtils = new class NodeHost implements IHostUtils {
 		declare readonly _serviceBrand: undefined;
+		public readonly pid = process.pid;
 		exit(code: number) { nativeExit(code); }
 		exists(path: string) { return Promises.exists(path); }
 		realpath(path: string) { return realpath(path); }
