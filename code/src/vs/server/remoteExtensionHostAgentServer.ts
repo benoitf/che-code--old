@@ -69,7 +69,6 @@ import { isEqualOrParent } from 'vs/base/common/extpath';
 import { IServerEnvironmentService, ServerEnvironmentService, ServerParsedArgs } from 'vs/server/serverEnvironmentService';
 import { basename, dirname, join } from 'vs/base/common/path';
 import { REMOTE_TERMINAL_CHANNEL_NAME } from 'vs/workbench/contrib/terminal/common/remoteTerminalChannel';
-import { RemoteTerminalChannel } from 'vs/server/remoteTerminalChannel';
 import { LoaderStats } from 'vs/base/common/amd';
 import { RemoteExtensionLogFileName } from 'vs/workbench/services/remote/common/remoteAgentService';
 import { ExtensionManagementCLIService } from 'vs/platform/extensionManagement/common/extensionManagementCLIService';
@@ -79,6 +78,7 @@ import { PtyHostService } from 'vs/platform/terminal/node/ptyHostService';
 import { IRemoteTelemetryService, RemoteNullTelemetryService, RemoteTelemetryService } from 'vs/server/remoteTelemetryService';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { UriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentityService';
+import { RemoteTerminalMachineExecChannel } from './remoteTerminalMachineExecChannel';
 
 const SHUTDOWN_TIMEOUT = 5 * 60 * 1000;
 
@@ -333,7 +333,8 @@ export class RemoteExtensionHostAgentServer extends Disposable {
 			const remoteExtensionEnvironmentChannel = new RemoteAgentEnvironmentChannel(this._connectionToken, this._environmentService, extensionManagementCLIService, this._logService, accessor.get(IRemoteTelemetryService), appInsightsAppender, this._productService);
 			this._socketServer.registerChannel('remoteextensionsenvironment', remoteExtensionEnvironmentChannel);
 
-			this._socketServer.registerChannel(REMOTE_TERMINAL_CHANNEL_NAME, new RemoteTerminalChannel(this._environmentService, this._logService, ptyService, this._productService));
+			// this._socketServer.registerChannel(REMOTE_TERMINAL_CHANNEL_NAME, new RemoteTerminalChannel(this._environmentService, this._logService, ptyService, this._productService));
+			this._socketServer.registerChannel(REMOTE_TERMINAL_CHANNEL_NAME, new RemoteTerminalMachineExecChannel(this._logService));
 
 			const remoteFileSystemChannel = new RemoteAgentFileSystemProviderChannel(this._logService, this._environmentService);
 			this._socketServer.registerChannel(REMOTE_FILE_SYSTEM_CHANNEL_NAME, remoteFileSystemChannel);

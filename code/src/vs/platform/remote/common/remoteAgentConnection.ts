@@ -25,7 +25,7 @@ export const enum ConnectionType {
 	Tunnel = 3,
 }
 
-export function connectionTypeToString(connectionType: ConnectionType): string {
+function connectionTypeToString(connectionType: ConnectionType): string {
 	switch (connectionType) {
 		case ConnectionType.Management:
 			return 'Management';
