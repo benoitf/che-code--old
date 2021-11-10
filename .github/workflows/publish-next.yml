@@ -36,5 +36,6 @@ jobs:
         with:
           push: true
           platforms: linux/amd64
+          file: build/Dockerfile
           tags: |
             quay.io/che-incubator/che-code:next

@@ -12,7 +12,7 @@
 #
 
 # Copy checode stuff to the shared volume
-cp -r /checode/* /checode-mount/
+cp -r /checode* /checode-mount/
 echo "listing all files copied"
 ls -la /checode-mount
 

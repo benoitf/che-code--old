@@ -10,9 +10,10 @@
 # Contributors:
 #   Red Hat, Inc. - initial API and implementation
 #
-
 export USER_ID=$(id -u)
 export GROUP_ID=$(id -g)
+
+echo "user is ${USER_ID} and group ${GROUP_ID}"
 
 if ! grep -Fq "${USER_ID}" /etc/passwd; then
     # current user is an arbitrary
@@ -29,5 +30,10 @@ if ! grep -Fq "${USER_ID}" /etc/passwd; then
     sed "s/\${HOME}/\/che-vscode/g" > /etc/group
 fi
 
-/checode/bin/node-alpine /checode/out/vs/che/node/entrypoint-loader.js
-
+# detect if we're using alpine/musl
+libc=$(ldd /bin/ls | grep 'musl' | head -1 | cut -d ' ' -f1)
+if [ -n "$libc" ]; then
+    /checode-linux-musl/node /checode-linux-musl/out/vs/server/main.js --port 3100
+else
+    /checode-linux-libc/node /checode-linux-libc/out/vs/server/main.js --port 3100
+fi

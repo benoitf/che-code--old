@@ -18,6 +18,14 @@ ls -la /checode-mount/
 nohup /checode-mount/bin/machine-exec --url '0.0.0.0:3333' &
 sleep 5
 
-# Start the checode component
-/checode-mount/bin/node-alpine /checode-mount/out/vs/che/node/entrypoint-loader.js
+# Start the checode component based on musl or libc
+
+# detect if we're using alpine/musl
+libc=$(ldd /bin/ls | grep 'musl' | head -1 | cut -d ' ' -f1)
+if [ -n "$libc" ]; then
+    /checode-mount/checode-linux-musl/node /checode-mount/checode-linux-musl/out/vs/server/main.js --port 3100
+else
+    /checode-mount/checode-linux-libc/node /checode-mount/checode-linux-libc/out/vs/server/main.js --port 3100
+fi
+
 
