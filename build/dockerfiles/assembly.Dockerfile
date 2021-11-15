@@ -1,6 +1,6 @@
 # Grab content from previously build images
-FROM linux-libc as linux-libc-content
-FROM linux-musl as linux-musl-content
+FROM linux-libc-amd64 as linux-libc-content
+FROM linux-musl-amd64 as linux-musl-content
 
 FROM registry.access.redhat.com/ubi8/ubi:8.5-200 AS ubi-builder
 RUN mkdir -p /mnt/rootfs
