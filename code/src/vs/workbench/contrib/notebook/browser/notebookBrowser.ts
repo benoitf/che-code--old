@@ -398,7 +398,8 @@ export interface INotebookEditor {
 	 * An event emitted when the model of this editor has changed.
 	 */
 	readonly onDidChangeModel: Event<NotebookTextModel | undefined>;
-	readonly onDidFocusEditorWidget: Event<void>;
+	readonly onDidFocusWidget: Event<void>;
+	readonly onDidBlurWidget: Event<void>;
 	readonly onDidScroll: Event<void>;
 	readonly onDidChangeActiveCell: Event<void>;
 	readonly onDidChangeActiveKernel: Event<void>;
@@ -434,9 +435,14 @@ export interface INotebookEditor {
 	getSelectionViewModels(): ICellViewModel[];
 
 	/**
-	 * Focus the notebook editor cell list
+	 * Focus the active cell in notebook cell list
 	 */
 	focus(): void;
+
+	/**
+	 * Focus the notebook cell list container
+	 */
+	focusContainer(): void;
 
 	hasEditorFocus(): boolean;
 	hasWebviewFocus(): boolean;

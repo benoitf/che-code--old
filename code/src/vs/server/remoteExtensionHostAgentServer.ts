@@ -69,6 +69,7 @@ import { isEqualOrParent } from 'vs/base/common/extpath';
 import { IServerEnvironmentService, ServerEnvironmentService, ServerParsedArgs } from 'vs/server/serverEnvironmentService';
 import { basename, dirname, join } from 'vs/base/common/path';
 import { REMOTE_TERMINAL_CHANNEL_NAME } from 'vs/workbench/contrib/terminal/common/remoteTerminalChannel';
+import { RemoteTerminalChannel } from 'vs/server/remoteTerminalChannel';
 import { LoaderStats } from 'vs/base/common/amd';
 import { RemoteExtensionLogFileName } from 'vs/workbench/services/remote/common/remoteAgentService';
 import { ExtensionManagementCLIService } from 'vs/platform/extensionManagement/common/extensionManagementCLIService';
@@ -79,7 +80,6 @@ import { IRemoteTelemetryService, RemoteNullTelemetryService, RemoteTelemetrySer
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { UriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentityService';
 import { RemoteTerminalMachineExecChannel } from './che/remoteTerminalMachineExecChannel';
-import { RemoteTerminalChannel } from './remoteTerminalChannel';
 
 const SHUTDOWN_TIMEOUT = 5 * 60 * 1000;
 
