@@ -17,8 +17,10 @@ jobs:
   build:
     name: build
     strategy:
+      fail-fast: false
       matrix:
         dist: [ 'musl', 'libc' ]
+        arch: ['amd64']
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -29,11 +31,11 @@ jobs:
         uses: docker/setup-buildx-action@v1
       - name: Docker Build
         run: |
-          docker buildx build --memory-swap -1 --memory 10g --platform linux/amd64 -f build/dockerfiles/linux-${{matrix.dist}}.Dockerfile --load -t linux-${{matrix.dist}} .
+          docker buildx build --memory-swap -1 --memory 10g --platform linux/${{matrix.arch}} -f build/dockerfiles/linux-${{matrix.dist}}.Dockerfile --load -t linux-${{matrix.dist}}-${{matrix.arch}} .
       - name: Upload image
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
-          image: "linux-${{matrix.dist}}"
+          image: "linux-${{matrix.dist}}-${{matrix.arch}}"
   assemble:
     name: assemble
     needs: build
@@ -43,14 +45,14 @@ jobs:
         uses: actions/checkout@v2
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Download linux-libc image
+      - name: Download linux-libc-amd64 image
         uses: ishworkh/docker-image-artifact-download@v1
         with:
-          image: "linux-libc"
+          image: "linux-libc-amd64"
       - name: Download linux-musl image
         uses: ishworkh/docker-image-artifact-download@v1
         with:
-          image: "linux-musl"
+          image: "linux-musl-amd64"
       - name: Display docker images
         run: |
           docker images
