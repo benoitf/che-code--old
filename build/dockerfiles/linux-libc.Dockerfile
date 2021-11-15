@@ -47,23 +47,31 @@ RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
 
 # Compile test suites
 # https://github.com/microsoft/vscode/blob/cdde5bedbf3ed88f93b5090bb3ed9ef2deb7a1b4/test/integration/browser/README.md#compile
-# RUN yarn --cwd test/smoke compile && yarn --cwd test/integration/browser compile
+RUN yarn --cwd test/smoke compile && yarn --cwd test/integration/browser compile
 
 # install test dependencies
-# ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
-# RUN yarn playwright-install 
-# Install procps to manage to kill processes
-# RUN yum install -y procps
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
+RUN yarn playwright-install 
+# Install procps to manage to kill processes and centos stream repository
+RUN ARCH=$(uname -m) &&\
+    yum install --nobest -y procps \
+        https://rpmfind.net/linux/epel/8/Everything/x86_64/Packages/e/epel-release-8-13.el8.noarch.rpm \
+        http://mirror.centos.org/centos/8-stream/BaseOS/${ARCH}/os/Packages/centos-gpg-keys-8-3.el8.noarch.rpm \
+        http://mirror.centos.org/centos/8-stream/BaseOS/${ARCH}/os/Packages/centos-stream-repos-8-3.el8.noarch.rpm
+
+RUN yum install -y chromium && \
+    rm /root/.cache/ms-playwright/chromium-930007/chrome-linux/chrome && \
+    ln -s /usr/bin/chromium-browser /root/.cache/ms-playwright/chromium-930007/chrome-linux/chrome
 
 # Run integration tests (Browser)
-# RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
-#     VSCODE_REMOTE_SERVER_PATH="$(pwd)/../vscode-reh-web-linux-${NODE_ARCH}" \
-#     ./resources/server/test/test-web-integration.sh --browser chromium
+RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
+    VSCODE_REMOTE_SERVER_PATH="$(pwd)/../vscode-reh-web-linux-${NODE_ARCH}" \
+    ./resources/server/test/test-web-integration.sh --browser chromium
 
 # Run smoke tests (Browser)
-# RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
-#     VSCODE_REMOTE_SERVER_PATH="$(pwd)/../vscode-reh-web-linux-${NODE_ARCH}" \
-#     yarn smoketest-no-compile --web --headless --electronArgs="--disable-dev-shm-usage --use-gl=swiftshader"
+RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
+    VSCODE_REMOTE_SERVER_PATH="$(pwd)/../vscode-reh-web-linux-${NODE_ARCH}" \
+    yarn smoketest-no-compile --web --headless --electronArgs="--disable-dev-shm-usage --use-gl=swiftshader"
 
 
 RUN chmod a+x /checode/out/vs/server/main.js \
