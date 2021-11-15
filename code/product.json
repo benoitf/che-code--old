@@ -23,6 +23,10 @@
 	"licenseFileName": "LICENSE.txt",
 	"reportIssueUrl": "https://github.com/microsoft/vscode/issues/new",
 	"urlProtocol": "checode",
+	"sendASmile": {
+		"reportIssueUrl": "https://github.com/eclipse/che/issues/new?assignees=&labels=kind%2Fbug&template=bug_report.yml",
+		"requestFeatureUrl": "https://github.com/eclipse/che/issues/new?assignees=&labels=kind%2Fenhancement&template=enhancement.yaml"
+    },
 	"webviewContentExternalBaseUrlTemplate": "https://{{uuid}}.vscode-webview.net/insider/dc1a6699060423b8c4d2ced736ad70195378fddf/out/vs/workbench/contrib/webview/browser/pre/",
 	"extensionAllowedProposedApi": [
 		"ms-vscode.vscode-js-profile-flame",
