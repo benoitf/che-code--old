@@ -10,7 +10,8 @@
 name: pr-check
 
 # Trigger the workflow on pull request
-on: [pull_request]
+on: [push, pull_request]
+
 
 jobs:
 
